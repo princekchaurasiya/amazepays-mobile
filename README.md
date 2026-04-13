@@ -12,6 +12,18 @@ npm install --legacy-peer-deps
 npm start
 ```
 
+## Branches
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Stable; promote here only after `dev` is verified. |
+| `dev` | Integration; merge `intern` here first, test, then merge to `main`. |
+| `intern` | Day-to-day work; interns push only to this branch. |
+
+**Intern:** after clone, `git checkout intern` and `git pull origin intern` before working. Then commit and `git push origin intern`.
+
+**Maintainer:** merge intern → dev (`git checkout dev && git pull && git merge intern && git push origin dev`), test, then merge dev → main (`git checkout main && git pull && git merge dev && git push origin main`).
+
 ## Backend alignment
 
 Consumer API routes live under `/api/v1` (see Laravel `routes/api.php`):

@@ -1,0 +1,30 @@
+import { useAppStore } from '@/stores/appStore';
+import { useAuthStore } from '@/stores/authStore';
+import { Redirect } from 'expo-router';
+import { View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
+
+export default function Index() {
+  const hydrated = useAuthStore((s) => s.isHydrated);
+  const authenticated = useAuthStore((s) => s.isAuthenticated);
+  const onboarded = useAppStore((s) => s.hasCompletedOnboarding);
+  const guest = useAppStore((s) => s.allowGuestBrowse);
+
+  if (!hydrated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#38bdf8" />
+      </View>
+    );
+  }
+
+  if (!onboarded) {
+    return <Redirect href="/(auth)/onboarding" />;
+  }
+
+  if (!authenticated && !guest) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  return <Redirect href="/(tabs)" />;
+}

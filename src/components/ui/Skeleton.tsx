@@ -1,14 +1,9 @@
-import { colors, spacing } from '@/theme';
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { View, type ViewProps } from 'react-native';
 
-export function Skeleton({ style, ...rest }: ViewProps) {
-  return <View style={[styles.box, style]} {...rest} />;
+type Props = ViewProps & {
+  className?: string;
+};
+
+export function Skeleton({ style, className, ...rest }: Props) {
+  return <View className={`overflow-hidden rounded-lg bg-surface2 ${className ?? ''}`} style={style} {...rest} />;
 }
-
-const styles = StyleSheet.create({
-  box: {
-    backgroundColor: colors.surface2,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-});

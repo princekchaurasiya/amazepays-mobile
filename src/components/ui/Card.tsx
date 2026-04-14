@@ -1,16 +1,15 @@
-import { colors, spacing } from '@/theme';
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { View, type ViewProps } from 'react-native';
 
-export function Card({ style, ...rest }: ViewProps) {
-  return <View style={[styles.card, style]} {...rest} />;
+type Props = ViewProps & {
+  className?: string;
+};
+
+export function Card({ style, className, ...rest }: Props) {
+  return (
+    <View
+      className={`rounded-2xl border border-border bg-surface p-4 ${className ?? ''}`}
+      style={style}
+      {...rest}
+    />
+  );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing(2),
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-});

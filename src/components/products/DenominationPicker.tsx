@@ -93,9 +93,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  pillActive: { borderColor: colors.primary, backgroundColor: '#0c4a6e' },
+  pillActive: {
+    borderColor: colors.primaryBright,
+    backgroundColor: colors.chipActiveBg,
+  },
   pillText: { color: colors.text },
-  pillTextActive: { color: colors.primary },
+  pillTextActive: { color: colors.primaryBright },
   hint: { color: colors.textMuted, marginBottom: spacing(1) },
   input: {
     backgroundColor: colors.background,

@@ -1,12 +1,10 @@
-import { colors, spacing } from '@/theme';
+import { colors } from '@/theme';
 import {
   ActivityIndicator,
   Pressable,
-  StyleSheet,
   Text,
   type PressableProps,
   type StyleProp,
-  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 
@@ -18,28 +16,25 @@ type Props = Omit<PressableProps, 'style'> & {
   loading?: boolean;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
+  className?: string;
 };
 
-const variantStyles: Record<Variant, { container: ViewStyle; label: TextStyle }> = {
+const variantStyles: Record<Variant, { container: string; label: string }> = {
   primary: {
-    container: { backgroundColor: colors.primary },
-    label: { color: colors.background },
+    container: 'bg-primary',
+    label: 'text-on-primary',
   },
   secondary: {
-    container: { backgroundColor: colors.surface2 },
-    label: { color: colors.text },
+    container: 'bg-surface2',
+    label: 'text-text',
   },
   outline: {
-    container: {
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: colors.primary,
-    },
-    label: { color: colors.primary },
+    container: 'bg-transparent border border-primary-bright',
+    label: 'text-primary-bright',
   },
   destructive: {
-    container: { backgroundColor: colors.danger },
-    label: { color: colors.text },
+    container: 'bg-danger',
+    label: 'text-on-primary',
   },
 };
 
@@ -50,43 +45,31 @@ export function Button({
   disabled,
   fullWidth,
   style,
+  className,
   ...rest
 }: Props) {
   const vs = variantStyles[variant];
   return (
     <Pressable
       accessibilityRole="button"
+      className={`min-h-12 items-center justify-center rounded-xl px-4 py-3 ${vs.container} ${
+        fullWidth ? 'self-stretch' : ''
+      } ${className ?? ''}`}
       style={({ pressed }) => [
-        styles.base,
-        vs.container,
-        fullWidth && styles.fullWidth,
-        (disabled || loading) && styles.disabled,
-        pressed && styles.pressed,
+        (disabled || loading) && { opacity: 0.5 },
+        pressed && { opacity: 0.85 },
         style,
       ]}
       disabled={disabled || loading}
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.background : colors.text} />
+        <ActivityIndicator
+          color={variant === 'primary' || variant === 'destructive' ? colors.onPrimary : colors.text}
+        />
       ) : (
-        <Text style={[styles.label, vs.label]}>{title}</Text>
+        <Text className={`text-base font-semibold ${vs.label}`}>{title}</Text>
       )}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(2),
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  fullWidth: { alignSelf: 'stretch' },
-  label: { fontSize: 16, fontWeight: '600' },
-  disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.85 },
-});

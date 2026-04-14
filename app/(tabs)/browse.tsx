@@ -3,16 +3,45 @@ import { Input } from '@/components/ui/Input';
 import { useProductList } from '@/hooks/useProducts';
 import { colors, spacing } from '@/theme';
 import type { Product } from '@/types/models';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function paramToString(q: string | string[] | undefined): string {
+  if (q == null) return '';
+  return Array.isArray(q) ? (q[0] ?? '') : q;
+}
+
+function paramToOptionalInt(q: string | string[] | undefined): number | undefined {
+  const s = paramToString(q).trim();
+  if (!s) return undefined;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : undefined;
+}
 
 export default function BrowseScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const params = useLocalSearchParams<{
+    q?: string | string[];
+    category_id?: string | string[];
+    brand_id?: string | string[];
+  }>();
+  const qParam = paramToString(params.q);
+  const categoryIdParam = paramToOptionalInt(params.category_id);
+  const brandIdParam = paramToOptionalInt(params.brand_id);
+
+  const [search, setSearch] = useState(qParam);
+  const [debouncedSearch, setDebouncedSearch] = useState(qParam.trim());
+
+  useEffect(() => {
+    const next = paramToString(params.q);
+    if (next) {
+      setSearch(next);
+      setDebouncedSearch(next.trim());
+    }
+  }, [params.q]);
 
   const debounce = useMemo(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -22,9 +51,12 @@ export default function BrowseScreen() {
     };
   }, []);
 
-  const query = useProductList(
-    debouncedSearch ? { search: debouncedSearch, per_page: 20 } : { per_page: 20 }
-  );
+  const query = useProductList({
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    ...(categoryIdParam != null ? { category_id: categoryIdParam } : {}),
+    ...(brandIdParam != null ? { brand_id: brandIdParam } : {}),
+    per_page: 20,
+  });
 
   const products = useMemo(
     () => query.data?.pages.flatMap((p) => p.data) ?? [],
@@ -47,6 +79,7 @@ export default function BrowseScreen() {
         />
       </View>
       <ProductList
+        variant="rows"
         products={products}
         onProductPress={onProductPress}
         onRefresh={() => query.refetch()}

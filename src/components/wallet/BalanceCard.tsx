@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   },
   freeze: {
     marginTop: spacing(1),
-    backgroundColor: '#422006',
+    backgroundColor: colors.warningMutedBg,
     padding: spacing(1),
     borderRadius: 8,
   },

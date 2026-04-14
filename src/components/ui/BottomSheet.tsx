@@ -3,7 +3,6 @@ import { ReactNode } from 'react';
 import {
   Modal,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -20,54 +19,19 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.wrap}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+      <View className="flex-1 justify-end">
+        <Pressable className="absolute inset-0 bg-black/50" onPress={onClose} />
         <View
+          className="max-h-[75%] rounded-t-[20px] border-t border-border bg-surface px-4 pt-2"
           style={[
-            styles.sheet,
             { paddingBottom: Math.max(insets.bottom, spacing(2)) },
           ]}
         >
-          <View style={styles.handle} />
-          {title ? <Text style={styles.title}>{title}</Text> : null}
+          <View className="mb-3 h-1 w-10 self-center rounded bg-border" />
+          {title ? <Text className="mb-3 text-lg font-bold text-text">{title}</Text> : null}
           {children}
         </View>
       </View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: spacing(2),
-    paddingTop: spacing(1),
-    borderTopWidth: 1,
-    borderColor: colors.border,
-    maxHeight: '75%',
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    marginBottom: spacing(1.5),
-  },
-  title: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: spacing(1.5),
-  },
-});

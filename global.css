@@ -1,0 +1,27 @@
+@config "./tailwind.config.js";
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  --color-background: #f9fafb;
+  --color-surface: #ffffff;
+  --color-surface2: #f3f4f6;
+  --color-primary: #1b2b5e;
+  --color-primary-bright: #2d4490;
+  --color-on-primary: #ffffff;
+  --color-accent: #f5811f;
+  --color-accent-dark: #a4520b;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-danger: #dc2626;
+  --color-danger-muted-bg: #fee2e2;
+  --color-success: #16a34a;
+  --color-success-muted-bg: #dcfce7;
+  --color-warning: #d96c10;
+  --color-warning-muted-bg: #ffedd5;
+  --color-chip-active-bg: #d4dae9;
+}

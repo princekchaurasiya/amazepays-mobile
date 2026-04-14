@@ -5,6 +5,7 @@ import { apiClient } from './client';
 export type CatalogListParams = {
   search?: string;
   category_id?: number;
+  brand_id?: number;
   source_provider?: string;
   min_price?: number;
   max_price?: number;

@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
@@ -50,48 +50,48 @@ export default function ProfileScreen() {
 
   if (!authenticated || !user) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top + spacing(2), paddingHorizontal: spacing(2) }]}>
-        <Text style={styles.h1}>Profile</Text>
-        <Text style={styles.muted}>You are browsing as a guest.</Text>
-        <Button title="Sign in" fullWidth onPress={() => router.replace('/(auth)/login')} style={{ marginTop: spacing(2) }} />
+      <View className="flex-1 bg-background px-4" style={{ paddingTop: insets.top + spacing(2) }}>
+        <Text className="mb-2 text-2xl font-extrabold text-text">Profile</Text>
+        <Text className="text-text-muted">You are browsing as a guest.</Text>
+        <Button title="Sign in" fullWidth onPress={() => router.replace('/(auth)/login')} className="mt-4" />
       </View>
     );
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + spacing(2), paddingHorizontal: spacing(2) }]}>
-      <Text style={styles.h1}>Profile</Text>
-      <Card style={styles.profileCard}>
-        <View style={styles.row}>
+    <View className="flex-1 bg-background px-4" style={{ paddingTop: insets.top + spacing(2) }}>
+      <Text className="mb-2 text-2xl font-extrabold text-text">Profile</Text>
+      <Card className="mb-4">
+        <View className="flex-row items-center">
           <Avatar name={user.name} />
-          <View style={styles.userMeta}>
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.muted}>{user.email}</Text>
-            {user.mobile ? <Text style={styles.muted}>{user.mobile}</Text> : null}
+          <View className="ml-3 flex-1">
+            <Text className="text-lg font-bold text-text">{user.name}</Text>
+            <Text className="text-text-muted">{user.email}</Text>
+            {user.mobile ? <Text className="text-text-muted">{user.mobile}</Text> : null}
           </View>
         </View>
       </Card>
 
-      <Text style={styles.section}>Account</Text>
+      <Text className="mb-1 mt-2 font-semibold text-text-muted">Account</Text>
       <Card>
-        <Text style={styles.label}>Roles</Text>
-        <Text style={styles.value}>{(user.roles ?? []).join(', ') || 'b2c-user'}</Text>
+        <Text className="mb-1 text-[13px] text-text-muted">Roles</Text>
+        <Text className="text-[15px] text-text">{(user.roles ?? []).join(', ') || 'b2c-user'}</Text>
         <Divider />
-        <Text style={styles.label}>2FA</Text>
-        <Text style={styles.value}>{user.two_factor_enabled ? 'Enabled' : 'Off'}</Text>
+        <Text className="mb-1 text-[13px] text-text-muted">2FA</Text>
+        <Text className="text-[15px] text-text">{user.two_factor_enabled ? 'Enabled' : 'Off'}</Text>
         <Divider />
-        <Text style={styles.label}>Transaction PIN</Text>
-        <Text style={styles.value}>{user.transaction_pin_set ? 'Set' : 'Not set'}</Text>
+        <Text className="mb-1 text-[13px] text-text-muted">Transaction PIN</Text>
+        <Text className="text-[15px] text-text">{user.transaction_pin_set ? 'Set' : 'Not set'}</Text>
       </Card>
 
-      <Text style={styles.section}>Notifications</Text>
+      <Text className="mb-1 mt-2 font-semibold text-text-muted">Notifications</Text>
       <Card>
-        <View style={styles.switchRow}>
-          <Text style={styles.value}>Push notifications</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-[15px] text-text">Push notifications</Text>
           <Switch value={pushEnabled} onValueChange={togglePush} disabled={!pushSupported} />
         </View>
         {!pushSupported ? (
-          <Text style={[styles.muted, styles.helperText]}>
+          <Text className="mt-2 text-text-muted">
             Push notifications are unavailable in Expo Go. Use a development build to test them.
           </Text>
         ) : null}
@@ -101,34 +101,10 @@ export default function ProfileScreen() {
         title="Sign out"
         variant="destructive"
         fullWidth
-        style={{ marginTop: spacing(3) }}
+        className="mt-6"
         loading={logout.isPending}
         onPress={() => logout.mutate()}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  h1: { color: colors.text, fontSize: 24, fontWeight: '800', marginBottom: spacing(1) },
-  muted: { color: colors.textMuted },
-  profileCard: { marginBottom: spacing(2) },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  userMeta: { marginLeft: spacing(1.5), flex: 1 },
-  name: { color: colors.text, fontSize: 18, fontWeight: '700' },
-  section: {
-    color: colors.textMuted,
-    marginBottom: spacing(0.75),
-    marginTop: spacing(1),
-    fontWeight: '600',
-  },
-  label: { color: colors.textMuted, fontSize: 13, marginBottom: 4 },
-  value: { color: colors.text, fontSize: 15 },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  helperText: { marginTop: spacing(1) },
-});

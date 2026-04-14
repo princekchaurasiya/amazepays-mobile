@@ -13,14 +13,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 
 type Form = z.infer<typeof checkoutSchema>;
 
 const paymentOptions = [
-  { label: 'Wallet', value: 'wallet' as const },
   { label: 'CCAvenue', value: 'ccavenue' as const },
   { label: 'Razorpay', value: 'razorpay' as const },
   { label: 'Unlimit', value: 'unlimit' as const },
@@ -53,17 +52,17 @@ export default function CheckoutScreen() {
       receiver_email: '',
       receiver_mobile: '',
       receiver_msg: '',
-      payment_method: 'wallet',
+      payment_method: 'ccavenue',
     },
   });
 
   if (!authenticated) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
         <Header title="Checkout" onBack={() => router.back()} />
-        <View style={{ padding: spacing(2) }}>
-          <Text style={styles.text}>Sign in to place an order.</Text>
-          <Button title="Sign in" onPress={() => router.replace('/(auth)/login')} style={{ marginTop: spacing(2) }} />
+        <View className="p-4">
+          <Text className="text-text">Sign in to place an order.</Text>
+          <Button title="Sign in" onPress={() => router.replace('/(auth)/login')} className="mt-4" />
         </View>
       </View>
     );
@@ -71,11 +70,11 @@ export default function CheckoutScreen() {
 
   if (!first) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
         <Header title="Checkout" onBack={() => router.back()} />
-        <View style={{ padding: spacing(2) }}>
-          <Text style={styles.text}>Your cart is empty.</Text>
-          <Button title="Browse" onPress={() => router.replace('/(tabs)/browse')} style={{ marginTop: spacing(2) }} />
+        <View className="p-4">
+          <Text className="text-text">Your cart is empty.</Text>
+          <Button title="Browse" onPress={() => router.replace('/(tabs)/browse')} className="mt-4" />
         </View>
       </View>
     );
@@ -112,7 +111,7 @@ export default function CheckoutScreen() {
 
     const res = await placeOrder.mutateAsync(body);
 
-    if (values.payment_method !== 'wallet' && res.payment?.redirect_url) {
+    if (res.payment?.redirect_url) {
       clearCart();
       router.replace({
         pathname: '/payment',
@@ -129,41 +128,41 @@ export default function CheckoutScreen() {
   });
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <Header title="Checkout" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ padding: spacing(2), paddingBottom: spacing(4) }}>
         <Card>
-          <Text style={styles.cardTitle}>Summary</Text>
-          <Text style={styles.line}>{first.name}</Text>
-          <Text style={styles.muted}>
+          <Text className="mb-1.5 text-base font-bold text-text">Summary</Text>
+          <Text className="font-semibold text-text">{first.name}</Text>
+          <Text className="mt-1 text-text-muted">
             Qty {first.quantity} × {formatInr(first.denomination)}
           </Text>
-          <Text style={styles.total}>Subtotal {formatInr(subtotal)}</Text>
+          <Text className="mt-2 text-text">Subtotal {formatInr(subtotal)}</Text>
           {discount > 0 ? (
-            <Text style={styles.disc}>Discount −{formatInr(discount)}</Text>
+            <Text className="mt-1 text-success">Discount −{formatInr(discount)}</Text>
           ) : null}
-          <Text style={styles.grand}>Pay {formatInr(total)}</Text>
+          <Text className="mt-1.5 text-lg font-extrabold text-primary">Pay {formatInr(total)}</Text>
         </Card>
 
-        <Text style={styles.section}>Promo</Text>
-        <View style={styles.promoRow}>
+        <Text className="mb-1.5 mt-4 font-semibold text-text-muted">Promo</Text>
+        <View className="flex-row items-start gap-2">
           <Input
             placeholder="Code"
             value={promoInput}
             onChangeText={setPromoInput}
-            style={{ flex: 1 }}
+            className="flex-1"
           />
           <Button title="Apply" variant="secondary" onPress={applyPromo} />
         </View>
-        {promo ? <Text style={styles.ok}>Applied: {promo}</Text> : null}
-        {offerErr ? <Text style={styles.err}>{offerErr}</Text> : null}
+        {promo ? <Text className="mt-2 text-success">Applied: {promo}</Text> : null}
+        {offerErr ? <Text className="mt-2 text-danger">{offerErr}</Text> : null}
 
-        <Text style={styles.section}>Gift options</Text>
+        <Text className="mb-1.5 mt-4 font-semibold text-text-muted">Gift options</Text>
         <Controller
           control={control}
           name="gift_send_option"
           render={({ field: { onChange, value } }) => (
-            <View style={styles.giftRow}>
+            <View className="flex-row flex-wrap gap-2">
               {(['buy_for_self', 'send_as_gift'] as const).map((opt) => (
                 <Button
                   key={opt}
@@ -217,12 +216,12 @@ export default function CheckoutScreen() {
           )}
         />
 
-        <Text style={styles.section}>Payment</Text>
+        <Text className="mb-1.5 mt-4 font-semibold text-text-muted">Payment</Text>
         <Controller
           control={control}
           name="payment_method"
           render={({ field: { onChange, value } }) => (
-            <View style={styles.payGrid}>
+            <View className="gap-2">
               {paymentOptions.map((p) => (
                 <Button
                   key={p.value}
@@ -240,26 +239,9 @@ export default function CheckoutScreen() {
           fullWidth
           loading={placeOrder.isPending}
           onPress={submit}
-          style={{ marginTop: spacing(2) }}
+          className="mt-4"
         />
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  text: { color: colors.text },
-  cardTitle: { color: colors.text, fontWeight: '700', fontSize: 16, marginBottom: spacing(0.75) },
-  line: { color: colors.text, fontWeight: '600' },
-  muted: { color: colors.textMuted, marginTop: 4 },
-  total: { color: colors.text, marginTop: spacing(1) },
-  disc: { color: colors.success, marginTop: 4 },
-  grand: { color: colors.primary, fontWeight: '800', fontSize: 18, marginTop: spacing(0.75) },
-  section: { color: colors.textMuted, fontWeight: '600', marginTop: spacing(2), marginBottom: spacing(0.75) },
-  promoRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
-  err: { color: colors.danger, marginTop: 8 },
-  ok: { color: colors.success, marginTop: 8 },
-  giftRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  payGrid: { gap: 8 },
-});

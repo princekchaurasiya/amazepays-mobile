@@ -10,7 +10,7 @@ import { getListImageUrl, getProductTitle, isOutOfStock, parsePrice } from '@/ut
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProductDetailScreen() {
@@ -55,9 +55,9 @@ export default function ProductDetailScreen() {
 
   if (isLoading || !product) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
+      <View className="flex-1 items-center justify-center" style={{ paddingTop: insets.top }}>
         <ActivityIndicator color={colors.primary} />
-        {error ? <Text style={styles.err}>Could not load product</Text> : null}
+        {error ? <Text className="mt-2 text-danger">Could not load product</Text> : null}
       </View>
     );
   }
@@ -90,55 +90,55 @@ export default function ProductDetailScreen() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <Header title="Product" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ paddingBottom: spacing(4) }}>
         {img ? (
-          <Image source={{ uri: img }} style={styles.hero} contentFit="cover" />
+          <Image source={{ uri: img }} style={{ width: '100%', aspectRatio: 1.2 }} contentFit="cover" />
         ) : (
-          <View style={[styles.hero, styles.ph]} />
+          <View className="aspect-[1.2] w-full bg-surface" />
         )}
-        <View style={{ paddingHorizontal: spacing(2) }}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.price}>{formatInr(activeDenom)}</Text>
+        <View className="px-4">
+          <Text className="mt-2 text-[22px] font-extrabold text-text">{title}</Text>
+          <Text className="mt-1 text-xl font-bold text-primary">{formatInr(activeDenom)}</Text>
           {product.discount_percentage ? (
-            <Text style={styles.disc}>
+            <Text className="mt-1 text-success">
               {String(product.discount_percentage)}% off
             </Text>
           ) : null}
 
-          <View style={styles.row}>
-            <Text style={styles.lbl}>Amount</Text>
+          <View className="mt-3 flex-row items-center justify-between">
+            <Text className="text-text-muted">Amount</Text>
             <Button title="Choose" variant="outline" onPress={() => setPickerOpen(true)} />
           </View>
 
-          <View style={styles.row}>
-            <Text style={styles.lbl}>Quantity</Text>
-            <View style={styles.stepper}>
-              <Pressable onPress={() => setQty((q) => Math.max(1, q - 1))} style={styles.stepBtn}>
-                <Text style={styles.stepTxt}>−</Text>
+          <View className="mt-3 flex-row items-center justify-between">
+            <Text className="text-text-muted">Quantity</Text>
+            <View className="flex-row items-center">
+              <Pressable onPress={() => setQty((q) => Math.max(1, q - 1))} className="h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface">
+                <Text className="text-[20px] text-text">−</Text>
               </Pressable>
-              <Text style={styles.qty}>{qty}</Text>
-              <Pressable onPress={() => setQty((q) => Math.min(50, q + 1))} style={styles.stepBtn}>
-                <Text style={styles.stepTxt}>+</Text>
+              <Text className="mx-3 text-lg font-bold text-text">{qty}</Text>
+              <Pressable onPress={() => setQty((q) => Math.min(50, q + 1))} className="h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface">
+                <Text className="text-[20px] text-text">+</Text>
               </Pressable>
             </View>
           </View>
 
           <Pressable onPress={() => setRedeemOpen(!redeemOpen)}>
-            <Text style={styles.acc}>How to redeem {redeemOpen ? '▼' : '▶'}</Text>
+            <Text className="mt-3 font-semibold text-primary">How to redeem {redeemOpen ? '▼' : '▶'}</Text>
           </Pressable>
           {redeemOpen ? (
-            <Text style={styles.body}>
+            <Text className="mt-1.5 leading-6 text-text-muted">
               {product.resolved?.how_to_redeem ?? product.how_to_redeem ?? '—'}
             </Text>
           ) : null}
 
           <Pressable onPress={() => setTermsOpen(!termsOpen)}>
-            <Text style={styles.acc}>Terms & conditions {termsOpen ? '▼' : '▶'}</Text>
+            <Text className="mt-3 font-semibold text-primary">Terms & conditions {termsOpen ? '▼' : '▶'}</Text>
           </Pressable>
           {termsOpen ? (
-            <Text style={styles.body}>
+            <Text className="mt-1.5 leading-6 text-text-muted">
               {product.resolved?.terms ?? product.terms_and_conditions ?? '—'}
             </Text>
           ) : null}
@@ -148,7 +148,7 @@ export default function ProductDetailScreen() {
             fullWidth
             disabled={oos}
             onPress={addToCart}
-            style={{ marginTop: spacing(2) }}
+            className="mt-4"
           />
           <Button
             title="Buy now"
@@ -156,11 +156,11 @@ export default function ProductDetailScreen() {
             fullWidth
             disabled={oos}
             onPress={buyNow}
-            style={{ marginTop: spacing(1) }}
+            className="mt-2"
           />
 
           {!authenticated ? (
-            <Text style={styles.hint}>Sign in at checkout for wallet / saved profile.</Text>
+            <Text className="mt-4 text-center text-text-muted">Sign in at checkout to complete your purchase.</Text>
           ) : null}
         </View>
       </ScrollView>
@@ -177,37 +177,3 @@ export default function ProductDetailScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  err: { color: colors.danger, marginTop: spacing(1) },
-  hero: { width: '100%', aspectRatio: 1.2 },
-  ph: { backgroundColor: colors.surface },
-  title: { color: colors.text, fontSize: 22, fontWeight: '800', marginTop: spacing(1) },
-  price: { color: colors.primary, fontSize: 20, fontWeight: '700', marginTop: spacing(0.5) },
-  disc: { color: colors.success, marginTop: 4 },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing(1.5),
-  },
-  lbl: { color: colors.textMuted },
-  stepper: { flexDirection: 'row', alignItems: 'center' },
-  stepBtn: {
-    backgroundColor: colors.surface,
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  stepTxt: { color: colors.text, fontSize: 20 },
-  qty: { color: colors.text, marginHorizontal: spacing(1.5), fontSize: 18, fontWeight: '700' },
-  acc: { color: colors.primary, marginTop: spacing(1.5), fontWeight: '600' },
-  body: { color: colors.textMuted, marginTop: spacing(0.75), lineHeight: 22 },
-  hint: { color: colors.textMuted, marginTop: spacing(2), textAlign: 'center' },
-});

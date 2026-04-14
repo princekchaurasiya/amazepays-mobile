@@ -1,13 +1,12 @@
-import { colors, spacing } from '@/theme';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 type Tone = 'default' | 'success' | 'warning' | 'danger';
 
 const tones: Record<Tone, { bg: string; fg: string }> = {
-  default: { bg: colors.surface2, fg: colors.text },
-  success: { bg: '#14532d', fg: colors.success },
-  warning: { bg: '#422006', fg: colors.warning },
-  danger: { bg: '#450a0a', fg: colors.danger },
+  default: { bg: 'bg-surface2', fg: 'text-text' },
+  success: { bg: 'bg-success-muted-bg', fg: 'text-success' },
+  warning: { bg: 'bg-warning-muted-bg', fg: 'text-warning' },
+  danger: { bg: 'bg-danger-muted-bg', fg: 'text-danger' },
 };
 
 export function Badge({
@@ -19,18 +18,8 @@ export function Badge({
 }) {
   const t = tones[tone];
   return (
-    <View style={[styles.wrap, { backgroundColor: t.bg }]}>
-      <Text style={[styles.text, { color: t.fg }]}>{label}</Text>
+    <View className={`self-start rounded-lg px-2 py-1 ${t.bg}`}>
+      <Text className={`text-xs font-semibold capitalize ${t.fg}`}>{label}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing(1),
-    paddingVertical: spacing(0.5),
-    borderRadius: 8,
-  },
-  text: { fontSize: 12, fontWeight: '600', textTransform: 'capitalize' },
-});

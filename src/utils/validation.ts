@@ -45,7 +45,7 @@ export const checkoutSchema = z
     receiver_email: z.string().email().optional().or(z.literal('')),
     receiver_mobile: z.string().optional(),
     receiver_msg: z.string().max(500).optional(),
-    payment_method: z.enum(['wallet', 'ccavenue', 'unlimit', 'razorpay']),
+    payment_method: z.enum(['ccavenue', 'unlimit', 'razorpay']),
   })
   .superRefine((data, ctx) => {
     if (data.gift_send_option === 'send_as_gift') {
@@ -78,11 +78,4 @@ export const profileSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
   mobile: z.string().optional(),
-});
-
-export const loadWalletSchema = z.object({
-  amount: z.number().min(100).max(500000),
-  payment_method: z.enum(['bank_transfer', 'upi', 'neft', 'rtgs']),
-  utr_number: z.string().min(1, 'UTR required'),
-  bank_reference: z.string().optional(),
 });

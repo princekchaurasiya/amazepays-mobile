@@ -34,9 +34,8 @@ export function usePlaceOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: PlaceOrderPayload) => ordersApi.place(body),
-    onSuccess: () => {
+       onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] });
-      qc.invalidateQueries({ queryKey: ['wallet'] });
     },
   });
 }

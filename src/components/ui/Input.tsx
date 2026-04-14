@@ -1,7 +1,6 @@
 import { colors, spacing } from '@/theme';
 import { forwardRef } from 'react';
 import {
-  StyleSheet,
   Text,
   TextInput,
   type TextInputProps,
@@ -11,43 +10,26 @@ import {
 type Props = TextInputProps & {
   label?: string;
   error?: string;
+  className?: string;
 };
 
 export const Input = forwardRef<TextInput, Props>(function Input(
-  { label, error, style, ...rest },
+  { label, error, style, className, ...rest },
   ref
 ) {
   return (
-    <View style={styles.wrap}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+    <View className="mb-3">
+      {label ? <Text className="mb-1 text-sm text-text-muted">{label}</Text> : null}
       <TextInput
         ref={ref}
         placeholderTextColor={colors.textMuted}
-        style={[styles.input, error ? styles.inputError : null, style]}
+        className={`rounded-xl border bg-surface px-3 py-2.5 text-base text-text ${
+          error ? 'border-danger' : 'border-border'
+        } ${className ?? ''}`}
+        style={style}
         {...rest}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text className="mt-1 text-xs text-danger">{error}</Text> : null}
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  wrap: { marginBottom: spacing(1.5) },
-  label: {
-    color: colors.textMuted,
-    marginBottom: spacing(0.5),
-    fontSize: 14,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing(1.5),
-    paddingVertical: spacing(1.25),
-    color: colors.text,
-    fontSize: 16,
-  },
-  inputError: { borderColor: colors.danger },
-  error: { color: colors.danger, marginTop: spacing(0.5), fontSize: 12 },
 });

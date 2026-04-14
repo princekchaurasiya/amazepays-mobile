@@ -21,7 +21,7 @@ export default function OnboardingScreen() {
         />
         <Text style={styles.title}>AmazePays</Text>
         <Text style={styles.sub}>
-          Buy digital gift cards, manage your wallet, and track orders — one app for B2C and B2B.
+          Buy digital gift cards and track orders in one place.
         </Text>
       </View>
       <View>

@@ -7,9 +7,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { formatDateTime, formatInr } from '@/utils/format';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Order } from '@/types/models';
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -25,7 +24,7 @@ export default function OrdersScreen() {
 
   if (!authenticated) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top + spacing(2) }]}>
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top + spacing(2) }}>
         <EmptyState
           title="Sign in to see orders"
           description="Create an account or sign in to view your purchase history."
@@ -38,15 +37,15 @@ export default function OrdersScreen() {
 
   if (query.isLoading) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
+      <View className="flex-1 items-center justify-center" style={{ paddingTop: insets.top }}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + spacing(1) }]}>
-      <Text style={styles.h1}>Orders</Text>
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top + spacing(1) }}>
+      <Text className="mb-1 px-4 text-2xl font-extrabold text-text">Orders</Text>
       <FlatList
         data={orders}
         keyExtractor={(o) => String(o.id)}
@@ -62,17 +61,15 @@ export default function OrdersScreen() {
           <EmptyState title="No orders yet" description="Your completed purchases appear here." />
         }
         renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push(`/order/${item.id}`)}
-          >
-            <Card style={styles.card}>
-              <View style={styles.row}>
-                <Text style={styles.orderNo}>#{item.order_number ?? item.id}</Text>
+          <Pressable onPress={() => router.push(`/order/${item.id}`)}>
+            <Card className="mb-3">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-bold text-text">#{item.order_number ?? item.id}</Text>
                 <Badge label={String(item.status ?? item.order_status ?? '—')} tone="default" />
               </View>
-              <Text style={styles.prod}>{item.product_name ?? 'Product'}</Text>
-              <Text style={styles.meta}>{formatDateTime(item.created_at)}</Text>
-              <Text style={styles.amount}>{formatInr(item.grand_total)}</Text>
+              <Text className="mt-1.5 text-text-muted">{item.product_name ?? 'Product'}</Text>
+              <Text className="mt-1 text-xs text-text-muted">{formatDateTime(item.created_at)}</Text>
+              <Text className="mt-1.5 font-extrabold text-primary">{formatInr(item.grand_total)}</Text>
             </Card>
           </Pressable>
         )}
@@ -80,21 +77,3 @@ export default function OrdersScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  h1: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-    paddingHorizontal: spacing(2),
-    marginBottom: spacing(0.5),
-  },
-  card: { marginBottom: spacing(1.5) },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  orderNo: { color: colors.text, fontWeight: '700', fontSize: 16 },
-  prod: { color: colors.textMuted, marginTop: spacing(0.75) },
-  meta: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
-  amount: { color: colors.primary, fontWeight: '800', marginTop: spacing(0.75) },
-});

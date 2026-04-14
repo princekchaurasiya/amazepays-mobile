@@ -14,6 +14,23 @@ export type Category = {
   name: string;
   slug: string;
   thumbnail?: string | null;
+  accent_color?: string | null;
+};
+
+/** Homepage hero slide from `GET /api/v1/home` */
+export type HomeSlide = {
+  id: number;
+  desktop_image: string | null;
+  image_mobile: string | null;
+  slug: string | null;
+  product_id: number | null;
+  category_id: number | null;
+  brand_id: number | null;
+  is_linked: boolean;
+  img_alt_tag: string | null;
+  cta_link: string | null;
+  custom_url: string | null;
+  link_type: string | null;
 };
 
 export type StorefrontBrand = {
@@ -136,7 +153,7 @@ export type PlaceOrderPayload = {
   product_id: number;
   quantity: number;
   denomination: number;
-  payment_method: 'wallet' | 'ccavenue' | 'unlimit' | 'razorpay';
+  payment_method: 'ccavenue' | 'unlimit' | 'razorpay';
   offer_code?: string;
   gift_send_option?: 'send_as_gift' | 'buy_for_self';
   receiver_name?: string;

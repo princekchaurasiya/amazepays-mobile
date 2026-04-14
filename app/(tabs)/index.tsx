@@ -1,27 +1,65 @@
-import { useOffers } from '@/hooks/useOffers';
-import { useCategories, useProductList } from '@/hooks/useProducts';
-import { ProductList } from '@/components/products/ProductList';
+import { getApiBaseUrl } from '@/api/client';
+import { HomeCategoryStrip } from '@/components/categories/HomeCategoryStrip';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ProductList } from '@/components/products/ProductList';
+import { HomeHeroCarousel } from '@/components/home/HomeHeroCarousel';
+import { useCategories, useHomeSlides, useProductList } from '@/hooks/useProducts';
 import { colors, spacing } from '@/theme';
-import { useRouter } from 'expo-router';
+import type { AxiosError } from 'axios';
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Pressable,
-  ScrollView,
+  Platform,
   StyleSheet,
-  Text,
+  TextInput,
+  useWindowDimensions,
   View,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Category, Product } from '@/types/models';
+import type { Product } from '@/types/models';
+
+/** After this scroll offset, pin a duplicate category strip under the status bar. */
+const STICKY_CATEGORIES_AFTER = 88;
+
+/** Native header logo; width capped vs screen so narrow phones still leave room for search. */
+const LOGO_ASPECT = 132 / 40;
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const [categoryId, setCategoryId] = useState<number | undefined>();
+  const [scrollY, setScrollY] = useState(0);
+  const [homeSearch, setHomeSearch] = useState('');
+  const [debouncedHomeSearch, setDebouncedHomeSearch] = useState('');
+  const lastBrowsePush = useRef<string>('');
   const { data: catData } = useCategories();
-  const offers = useOffers();
+  const { data: heroSlides } = useHomeSlides();
+
+  const debounceSearch = useMemo(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    return (text: string) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setDebouncedHomeSearch(text.trim()), 450);
+    };
+  }, []);
+
+  useEffect(() => {
+    const t = debouncedHomeSearch;
+    if (t.length < 2 || t === lastBrowsePush.current) return;
+    lastBrowsePush.current = t;
+    router.push({ pathname: '/(tabs)/browse', params: { q: t } });
+  }, [debouncedHomeSearch, router]);
+
+  const submitHomeSearch = () => {
+    const t = homeSearch.trim();
+    if (!t) return;
+    lastBrowsePush.current = t;
+    router.push({ pathname: '/(tabs)/browse', params: { q: t } });
+  };
 
   const query = useProductList(
     categoryId ? { category_id: categoryId, per_page: 20 } : { per_page: 20 }
@@ -32,82 +70,141 @@ export default function HomeScreen() {
     [query.data?.pages]
   );
 
+  const catalogErrorDescription = useMemo(() => {
+    if (!query.isError || !query.error) {
+      return '';
+    }
+    const e = query.error as AxiosError<{ message?: string }>;
+    const status = e.response?.status;
+    let hint: string;
+    if (status === 404) {
+      hint =
+        '404 means the URL is wrong (not your Laravel API). The app calls GET /catalog on top of EXPO_PUBLIC_API_URL.\n\n' +
+        'Fix .env in amazepays-mobile, then restart Expo (npx expo start -c):\n' +
+        '• php artisan serve → http://YOUR_PC_IP:8000/api/v1\n' +
+        '• XAMPP (htdocs/amazepays) → http://YOUR_PC_IP/amazepays/public/api/v1\n' +
+        '• Android emulator + artisan → http://10.0.2.2:8000/api/v1\n\n' +
+        'Test in the device browser: paste your base + /health (should return JSON ok).';
+    } else if (e.code === 'ERR_NETWORK' || e.message === 'Network Error') {
+      hint =
+        'Network error — phone/emulator could not reach your PC. Same Wi‑Fi, firewall, and correct IP/port in .env.';
+    } else {
+      hint =
+        (e.response?.data as { message?: string } | undefined)?.message ||
+        e.message ||
+        'Request failed.';
+    }
+    return `${hint}\n\nCurrent API base: ${getApiBaseUrl()}`;
+  }, [query.isError, query.error]);
+
   const onProductPress = (p: Product) => {
     router.push(`/product/${p.id}`);
   };
 
-  const header = (
-    <View style={{ paddingBottom: spacing(1) }}>
-      <View style={styles.logoRow}>
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setScrollY(e.nativeEvent.contentOffset.y);
+  };
+
+  const showStickyCategories = scrollY > STICKY_CATEGORIES_AFTER;
+
+  const logoSize = useMemo(() => {
+    const w = Math.min(128, Math.round(windowWidth * 0.3));
+    return { width: w, height: Math.round(w / LOGO_ASPECT) };
+  }, [windowWidth]);
+
+  const listHeader = (
+    <View style={styles.headerBlock}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            paddingTop: insets.top + spacing(1),
+            paddingLeft: Math.max(insets.left, 4),
+            paddingRight: Math.max(insets.right, spacing(2)),
+          },
+        ]}
+      >
         <Image
           source={require('../../assets/logo.png')}
-          style={styles.headerLogo}
+          style={[styles.headerLogo, logoSize]}
           contentFit="contain"
         />
+        <TextInput
+          accessibilityLabel="Search gift cards"
+          placeholder="Search gift cards…"
+          placeholderTextColor={colors.textMuted}
+          value={homeSearch}
+          onChangeText={(t) => {
+            setHomeSearch(t);
+            if (!t.trim()) {
+              lastBrowsePush.current = '';
+            }
+            debounceSearch(t);
+          }}
+          onSubmitEditing={submitHomeSearch}
+          returnKeyType="search"
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.searchInput}
+        />
       </View>
-      <Text style={styles.heroTitle}>Gift cards for every occasion</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bannerRow}>
-        {(offers.data ?? []).slice(0, 5).map((o) => (
-          <View key={o.id} style={styles.banner}>
-            <Text style={styles.bannerText}>{o.name}</Text>
-            <Text style={styles.bannerSub}>{o.code}</Text>
-          </View>
-        ))}
-        {(!offers.data || offers.data.length === 0) && (
-          <View style={styles.banner}>
-            <Text style={styles.bannerText}>Welcome to AmazePays</Text>
-            <Text style={styles.bannerSub}>Browse top brands</Text>
-          </View>
-        )}
-      </ScrollView>
-      <Text style={styles.sectionLabel}>Categories</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <Pressable
-          style={[styles.chip, !categoryId && styles.chipActive]}
-          onPress={() => setCategoryId(undefined)}
-        >
-          <Text style={[styles.chipTxt, !categoryId && styles.chipTxtActive]}>All</Text>
-        </Pressable>
-        {(catData ?? []).map((c: Category) => (
-          <Pressable
-            key={c.id}
-            style={[styles.chip, categoryId === c.id && styles.chipActive]}
-            onPress={() => setCategoryId(c.id)}
-          >
-            {c.thumbnail ? (
-              <Image source={{ uri: c.thumbnail }} style={styles.chipImg} contentFit="cover" />
-            ) : null}
-            <Text
-              style={[
-                styles.chipTxt,
-                categoryId === c.id && styles.chipTxtActive,
-              ]}
-            >
-              {c.name}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <View style={styles.navDivider} />
+      <View style={styles.spacerSm} />
+      <HomeHeroCarousel slides={heroSlides ?? []} />
+      <HomeCategoryStrip
+        categories={catData ?? []}
+        selectedId={categoryId}
+        onSelect={setCategoryId}
+      />
     </View>
   );
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + spacing(1) }]}>
+    <View style={styles.root}>
+      {showStickyCategories ? (
+        <View
+          style={[
+            styles.stickyBar,
+            {
+              paddingTop: insets.top + spacing(0.5),
+            },
+          ]}
+        >
+          <HomeCategoryStrip
+            categories={catData ?? []}
+            selectedId={categoryId}
+            onSelect={setCategoryId}
+          />
+        </View>
+      ) : null}
       <ProductList
+        variant="rows"
         products={products}
         onProductPress={onProductPress}
         onRefresh={() => query.refetch()}
         refreshing={query.isFetching && !query.isFetchingNextPage}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onEndReached={() => {
           if (query.hasNextPage && !query.isFetchingNextPage) {
             query.fetchNextPage();
           }
         }}
         loadingMore={query.isFetchingNextPage}
-        ListHeaderComponent={header}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={
-          query.isLoading ? null : (
-            <EmptyState title="No products yet" description="Pull to refresh or adjust filters." />
+          query.isLoading ? null : query.isError ? (
+            <EmptyState
+              title="Couldn't load catalog"
+              description={catalogErrorDescription}
+              actionLabel="Retry"
+              onAction={() => void query.refetch()}
+            />
+          ) : (
+            <EmptyState
+              title="No products yet"
+              description="Storefront is empty or filters match nothing. Pull to refresh. If the website shows products, check DB: show_product and catalog_audience (B2C/both)."
+            />
           )
         }
       />
@@ -117,49 +214,57 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  logoRow: { paddingHorizontal: spacing(2), marginBottom: spacing(1) },
-  headerLogo: { width: 140, height: 40, alignSelf: 'flex-start' },
-  heroTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '800',
-    paddingHorizontal: spacing(2),
-    marginBottom: spacing(1),
+  headerBlock: {
+    paddingBottom: spacing(1),
+    backgroundColor: colors.background,
   },
-  bannerRow: { maxHeight: 100, paddingLeft: spacing(2) },
-  banner: {
-    width: 220,
-    height: 88,
-    marginRight: spacing(1),
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing(1.5),
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'center',
-  },
-  bannerText: { color: colors.text, fontWeight: '700', fontSize: 16 },
-  bannerSub: { color: colors.primary, marginTop: 4, fontSize: 13 },
-  sectionLabel: {
-    color: colors.textMuted,
-    marginTop: spacing(1),
-    marginBottom: spacing(0.75),
-    paddingHorizontal: spacing(2),
-  },
-  chip: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing(1.25),
-    paddingVertical: spacing(0.75),
-    borderRadius: 20,
+    paddingBottom: spacing(2),
+  },
+  headerLogo: {
+    flexShrink: 0,
+    marginRight: 2,
+  },
+  searchInput: {
+    flex: 1,
+    minHeight: 44,
     backgroundColor: colors.surface,
-    marginRight: 8,
-    marginLeft: spacing(2),
     borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: spacing(1.5),
+    paddingVertical: spacing(1),
+    color: colors.text,
+    fontSize: 16,
   },
-  chipActive: { borderColor: colors.primary, backgroundColor: '#0c4a6e' },
-  chipTxt: { color: colors.text, fontWeight: '600' },
-  chipTxtActive: { color: colors.primary },
-  chipImg: { width: 24, height: 24, borderRadius: 12, marginRight: 8 },
+  spacerSm: { height: spacing(1) },
+  /** Hairline + soft drop shadow so the nav feels separated from categories (not flat/congested). */
+  navDivider: {
+    height: Math.max(StyleSheet.hairlineWidth, 1),
+    backgroundColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.09,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+      default: {},
+    }),
+  },
+  stickyBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    zIndex: 10,
+    backgroundColor: colors.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
 });

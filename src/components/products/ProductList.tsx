@@ -1,6 +1,15 @@
 import type { Product } from '@/types/models';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { ProductCard } from './ProductCard';
+import { ProductRowCard } from './ProductRowCard';
 
 type Props = {
   products: Product[];
@@ -11,6 +20,10 @@ type Props = {
   loadingMore?: boolean;
   ListHeaderComponent?: React.ReactElement | null;
   ListEmptyComponent?: React.ReactElement | null;
+  /** `rows` = Hubble-style vertical list; `grid` = 2-column cards */
+  variant?: 'grid' | 'rows';
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  scrollEventThrottle?: number;
 };
 
 export function ProductList({
@@ -22,14 +35,19 @@ export function ProductList({
   loadingMore,
   ListHeaderComponent,
   ListEmptyComponent,
+  variant = 'grid',
+  onScroll,
+  scrollEventThrottle,
 }: Props) {
+  const isRows = variant === 'rows';
+
   return (
     <FlatList
       data={products}
       keyExtractor={(item) => String(item.id)}
-      numColumns={2}
-      columnWrapperStyle={styles.row}
-      contentContainerStyle={styles.list}
+      numColumns={isRows ? 1 : 2}
+      columnWrapperStyle={isRows ? undefined : styles.row}
+      contentContainerStyle={isRows ? styles.listRows : styles.list}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={ListEmptyComponent}
       refreshControl={
@@ -37,6 +55,8 @@ export function ProductList({
           <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} />
         ) : undefined
       }
+      onScroll={onScroll}
+      scrollEventThrottle={scrollEventThrottle ?? (onScroll ? 16 : undefined)}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.3}
       ListFooterComponent={
@@ -46,15 +66,20 @@ export function ProductList({
           </View>
         ) : null
       }
-      renderItem={({ item }) => (
-        <ProductCard product={item} onPress={() => onProductPress(item)} />
-      )}
+      renderItem={({ item }) =>
+        isRows ? (
+          <ProductRowCard product={item} onPress={() => onProductPress(item)} />
+        ) : (
+          <ProductCard product={item} onPress={() => onProductPress(item)} />
+        )
+      }
     />
   );
 }
 
 const styles = StyleSheet.create({
   list: { padding: 8, flexGrow: 1 },
+  listRows: { paddingTop: 8, paddingBottom: 16, flexGrow: 1 },
   row: { justifyContent: 'space-between' },
   footer: { paddingVertical: 16 },
 });

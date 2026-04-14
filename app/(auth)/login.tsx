@@ -21,7 +21,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -244,27 +243,27 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      className="flex-1"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View
+        className="flex-1 bg-background px-4"
         style={[
-          styles.root,
           { paddingTop: insets.top + spacing(2), paddingBottom: insets.bottom + spacing(2) },
         ]}
       >
         <Image
           source={require('../../assets/logo.png')}
-          style={styles.logo}
+          style={{ width: 120, height: 56, alignSelf: 'center', marginBottom: spacing(2) }}
           contentFit="contain"
         />
-        <Text style={styles.h1}>
+        <Text className="mb-1.5 text-[28px] font-extrabold text-text">
           {step === 'phone' && 'Welcome'}
           {step === 'otp' && 'Enter OTP'}
           {step === 'profile' && 'Almost there'}
           {step === '2fa' && 'Two-factor auth'}
         </Text>
-        <Text style={styles.muted}>
+        <Text className="mb-4 text-text-muted">
           {step === 'phone' && 'Sign in with your mobile number — no password.'}
           {step === 'otp' && `We sent a code to +91 ${phoneDigits}.`}
           {step === 'profile' && 'Add your name. Email and referral are optional.'}
@@ -293,14 +292,16 @@ export default function LoginScreen() {
         )}
 
         {step === 'otp' && (
-          <View style={styles.otpRow}>
+          <View className="mb-4 flex-row justify-between gap-2">
             {otpBoxes.map((digit, i) => (
               <TextInput
                 key={i}
                 ref={(r) => {
                   otpRefs.current[i] = r;
                 }}
-                style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
+                className={`h-12 flex-1 rounded-[10px] border bg-surface text-center text-[20px] font-bold text-text ${
+                  digit ? 'border-primary' : 'border-border'
+                }`}
                 keyboardType="number-pad"
                 maxLength={1}
                 value={digit}
@@ -370,29 +371,31 @@ export default function LoginScreen() {
           />
         )}
 
-        {error ? <Text style={styles.err}>{error}</Text> : null}
+        {error ? <Text className="mb-2 text-danger">{error}</Text> : null}
 
         {step === 'phone' && <Button title="Continue" fullWidth onPress={onSendOtp} loading={busy} />}
         {step === 'otp' && (
           <>
             <Button title="Continue" fullWidth onPress={onOtpContinue} loading={busy} />
             <Pressable
-              style={({ pressed }) => [styles.linkWrap, pressed && { opacity: 0.7 }]}
+              className="mt-3 items-center"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               onPress={onResendOtp}
               disabled={resendIn > 0 || busy}
             >
-              <Text style={[styles.link, resendIn > 0 && styles.linkDisabled]}>
+              <Text className={`text-[15px] ${resendIn > 0 ? 'text-text-muted' : 'text-primary'}`}>
                 {resendIn > 0 ? `Resend OTP in ${resendIn}s` : 'Resend OTP'}
               </Text>
             </Pressable>
             <Pressable
-              style={({ pressed }) => [styles.linkWrap, pressed && { opacity: 0.7 }]}
+              className="mt-3 items-center"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               onPress={() => {
                 setStep('phone');
                 setOtpBoxes(Array(OTP_LEN).fill(''));
               }}
             >
-              <Text style={styles.linkMuted}>Change number</Text>
+              <Text className="text-sm text-text-muted">Change number</Text>
             </Pressable>
           </>
         )}
@@ -402,57 +405,16 @@ export default function LoginScreen() {
         {step === '2fa' && <Button title="Verify" fullWidth onPress={on2fa} loading={busy} />}
 
         <Pressable
-          style={({ pressed }) => [styles.linkWrap, pressed && { opacity: 0.7 }]}
+          className="mt-3 items-center"
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           onPress={() => {
             setGuest(true);
             router.replace('/(tabs)');
           }}
         >
-          <Text style={styles.linkMuted}>Browse without account</Text>
+          <Text className="text-sm text-text-muted">Browse without account</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing(2),
-  },
-  logo: { width: 120, height: 56, alignSelf: 'center', marginBottom: spacing(2) },
-  h1: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: '800',
-    marginBottom: spacing(0.75),
-  },
-  muted: { color: colors.textMuted, marginBottom: spacing(2) },
-  err: { color: colors.danger, marginBottom: spacing(1) },
-  linkWrap: { marginTop: spacing(1.5), alignItems: 'center' },
-  link: { color: colors.primary, fontSize: 15 },
-  linkDisabled: { color: colors.textMuted },
-  linkMuted: { color: colors.textMuted, fontSize: 14 },
-  otpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing(2),
-    gap: 8,
-  },
-  otpBox: {
-    flex: 1,
-    height: 48,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  otpBoxFilled: {
-    borderColor: colors.primary,
-  },
-});

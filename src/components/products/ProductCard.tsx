@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
-  badgeText: { color: colors.text, fontSize: 10, fontWeight: '600' },
+  badgeText: { color: colors.onPrimary, fontSize: 10, fontWeight: '600' },
   title: {
     color: colors.text,
     fontSize: 14,

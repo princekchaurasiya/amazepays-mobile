@@ -2,7 +2,7 @@ import { Header } from '@/components/common/Header';
 import { colors, spacing } from '@/theme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
 
@@ -38,18 +38,18 @@ export default function PaymentWebViewScreen() {
 
   if (!uri) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
         <Header title="Payment" onBack={() => router.back()} />
-        <Text style={styles.err}>Missing payment URL</Text>
+        <Text className="p-4 text-danger">Missing payment URL</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.flex, { paddingTop: insets.top }]}>
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <Header title="Payment" onBack={() => router.replace('/(tabs)/orders')} />
       {loading ? (
-        <View style={styles.loading}>
+        <View className="absolute inset-0 z-10 items-center justify-center">
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : null}
@@ -61,21 +61,8 @@ export default function PaymentWebViewScreen() {
           maybeComplete(req.url);
           return true;
         }}
-        style={styles.flex}
+        style={{ flex: 1, backgroundColor: colors.background }}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  root: { flex: 1, backgroundColor: colors.background },
-  loading: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
-    pointerEvents: 'none',
-  },
-  err: { color: colors.danger, padding: spacing(2) },
-});

@@ -1,3 +1,4 @@
+import { homeApi } from '@/api/home';
 import { productsApi, type CatalogListParams } from '@/api/products';
 import {
   keepPreviousData,
@@ -39,6 +40,14 @@ export function useCategories() {
     queryKey: ['categories'],
     queryFn: () => productsApi.categories(),
     staleTime: 15 * 60 * 1000,
+  });
+}
+
+export function useHomeSlides() {
+  return useQuery({
+    queryKey: ['home', 'slides'],
+    queryFn: () => homeApi.getSlides(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

@@ -6,14 +6,15 @@ export default ({ config }) => ({
   slug: 'amazepays',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/icon.png',
-  userInterfaceStyle: 'automatic',
+  /** Same asset as web `public/images/logo.png` (copied into `assets/logo.png`). */
+  icon: './assets/logo.png',
+  userInterfaceStyle: 'light',
   scheme: 'amazepays',
   newArchEnabled: true,
   splash: {
-    image: './assets/splash-icon.png',
+    image: './assets/logo.png',
     resizeMode: 'contain',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#f9fafb',
   },
   ios: {
     supportsTablet: true,
@@ -21,8 +22,8 @@ export default ({ config }) => ({
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#0f172a',
+      foregroundImage: './assets/logo.png',
+      backgroundColor: '#f9fafb',
     },
     package: 'com.amazepays.app',
     edgeToEdgeEnabled: true,
@@ -31,7 +32,7 @@ export default ({ config }) => ({
     favicon: './assets/favicon.png',
     bundler: 'metro',
   },
-  plugins: ['expo-router', 'expo-notifications', 'expo-secure-store'],
+  plugins: ['expo-router', 'expo-notifications', 'expo-secure-store', 'expo-font'],
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1',
     sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',

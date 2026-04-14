@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     bottom: spacing(3),
     left: spacing(2),
     right: spacing(2),
-    backgroundColor: '#450a0a',
+    backgroundColor: colors.dangerMutedBg,
     padding: spacing(1.5),
     borderRadius: 12,
     borderWidth: 1,

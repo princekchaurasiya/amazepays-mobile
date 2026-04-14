@@ -1,5 +1,6 @@
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
+import { colors } from '@/theme';
 import { Redirect } from 'expo-router';
 import { View } from 'react-native';
 import { ActivityIndicator } from 'react-native';
@@ -12,8 +13,15 @@ export default function Index() {
 
   if (!hydrated) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator color="#38bdf8" />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }

@@ -299,9 +299,18 @@ export default function LoginScreen() {
                 ref={(r) => {
                   otpRefs.current[i] = r;
                 }}
-                className={`h-12 flex-1 rounded-[10px] border bg-surface text-center text-[20px] font-bold text-text ${
-                  digit ? 'border-primary' : 'border-border'
-                }`}
+                style={{
+                  height: 48,
+                  flex: 1,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  backgroundColor: colors.surface,
+                  color: colors.text,
+                  textAlign: 'center',
+                  borderColor: digit ? colors.primary : colors.border,
+                  fontSize: 20,
+                  fontWeight: '700',
+                }}
                 keyboardType="number-pad"
                 maxLength={1}
                 value={digit}

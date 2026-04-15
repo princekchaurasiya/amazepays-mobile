@@ -17,6 +17,8 @@ export const Input = forwardRef<TextInput, Props>(function Input(
   { label, error, style, className, ...rest },
   ref
 ) {
+  const safeClassName = typeof className === 'string' ? className : '';
+
   return (
     <View className="mb-3">
       {label ? <Text className="mb-1 text-sm text-text-muted">{label}</Text> : null}
@@ -25,7 +27,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
         placeholderTextColor={colors.textMuted}
         className={`rounded-xl border bg-surface px-3 py-2.5 text-base text-text ${
           error ? 'border-danger' : 'border-border'
-        } ${className ?? ''}`}
+        } ${safeClassName}`}
         style={style}
         {...rest}
       />

@@ -3,7 +3,7 @@ import { colors, spacing } from '@/theme';
 import { useAppStore } from '@/stores/appStore';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OnboardingScreen() {
@@ -12,19 +12,37 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + spacing(2), paddingBottom: insets.bottom + spacing(2) }]}>
-      <View style={styles.hero}>
-        <Image
-          source={require('../../assets/logo.png')}
-          style={styles.logo}
-          contentFit="contain"
-        />
-        <Text style={styles.title}>AmazePays</Text>
-        <Text style={styles.sub}>
-          Buy digital gift cards and track orders in one place.
-        </Text>
+    <View
+      className="flex-1 justify-between bg-background px-4"
+      style={{
+        paddingTop: (Platform.OS === 'ios' ? insets.top : 0) + spacing(2),
+        paddingBottom: insets.bottom + spacing(2),
+      }}
+    >
+      <View className="flex-1 justify-center">
+        <View
+          className="rounded-3xl border border-border bg-surface px-4 py-6"
+          style={Platform.select({
+            ios: {
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 14 },
+              shadowOpacity: 0.1,
+              shadowRadius: 20,
+            },
+            android: { elevation: 7 },
+            default: {},
+          })}
+        >
+          <View className="mb-4 h-[108px] w-[108px] self-center items-center justify-center rounded-full border border-border bg-surface2">
+            <Image source={require('../../assets/logo.png')} style={{ width: 84, height: 84 }} contentFit="contain" />
+          </View>
+          <Text className="text-center text-3xl font-extrabold text-text">AmazePays</Text>
+          <Text className="mt-3 text-center text-base leading-6 text-text-muted">
+            Buy digital gift cards and track orders in one place.
+          </Text>
+        </View>
       </View>
-      <View>
+      <View className="pt-3">
         <Button
           title="Get started"
           fullWidth
@@ -47,27 +65,3 @@ export default function OnboardingScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing(2),
-    justifyContent: 'space-between',
-  },
-  hero: { flex: 1, justifyContent: 'center' },
-  logo: { width: 96, height: 96, alignSelf: 'center', marginBottom: spacing(2) },
-  title: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  sub: {
-    color: colors.textMuted,
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: spacing(1.5),
-    lineHeight: 24,
-  },
-});

@@ -1,27 +1,78 @@
-@config "./tailwind.config.js";
-
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css";
 @import "nativewind/theme";
 
 @theme {
-  --color-background: #f9fafb;
-  --color-surface: #ffffff;
-  --color-surface2: #f3f4f6;
-  --color-primary: #1b2b5e;
-  --color-primary-bright: #2d4490;
+  /*
+   * AmazePays design tokens
+   * - Brand: extracted from logo (navy + orange) and harmonized into ramps
+   * - Neutrals: slightly cool gray to complement the navy brand
+   * - Semantic: app-facing aliases used everywhere (background, text, border, etc.)
+   */
+
+  /* Brand (logo navy) */
+  --brand-50: #eef1f8;
+  --brand-100: #d4dae9;
+  --brand-200: #b7c1de;
+  --brand-300: #8ea1cb;
+  --brand-400: #5f79b2;
+  --brand-500: #2d4490;
+  --brand-600: #1b2b5e;
+  --brand-700: #152248;
+  --brand-800: #101a36;
+  --brand-900: #0b1226;
+  --brand-950: #080d1c;
+
+  /* Accent (logo orange) */
+  --accent-50: #fff5eb;
+  --accent-100: #fee4cc;
+  --accent-200: #fecd99;
+  --accent-300: #fcb364;
+  --accent-400: #f8953a;
+  --accent-500: #f5811f;
+  --accent-600: #d96c10;
+  --accent-700: #a4520b;
+  --accent-800: #7a3e0a;
+  --accent-900: #5a3009;
+  --accent-950: #1d0f02;
+
+  /* Neutrals (cool gray) */
+  --neutral-0: #ffffff;
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+  --neutral-950: #0b1220;
+
+  /* Semantic tokens (use these in UI) */
+  --color-background: var(--neutral-50);
+  --color-surface: var(--neutral-0);
+  --color-surface2: var(--neutral-100);
+
+  --color-primary: var(--brand-600);
+  --color-primary-bright: var(--brand-500);
   --color-on-primary: #ffffff;
-  --color-accent: #f5811f;
-  --color-accent-dark: #a4520b;
-  --color-text: #111827;
-  --color-text-muted: #6b7280;
-  --color-border: #e5e7eb;
+
+  --color-accent: var(--accent-500);
+  --color-accent-dark: var(--accent-700);
+
+  --color-text: var(--neutral-900);
+  --color-text-muted: var(--neutral-500);
+  --color-border: var(--neutral-200);
+
   --color-danger: #dc2626;
   --color-danger-muted-bg: #fee2e2;
   --color-success: #16a34a;
   --color-success-muted-bg: #dcfce7;
-  --color-warning: #d96c10;
+  --color-warning: var(--accent-600);
   --color-warning-muted-bg: #ffedd5;
-  --color-chip-active-bg: #d4dae9;
+
+  --color-chip-active-bg: var(--brand-100);
 }

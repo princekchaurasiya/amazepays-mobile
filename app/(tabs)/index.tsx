@@ -9,30 +9,22 @@ import type { AxiosError } from 'axios';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Platform,
-  StyleSheet,
   TextInput,
   useWindowDimensions,
   View,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Product } from '@/types/models';
-
-/** After this scroll offset, pin a duplicate category strip under the status bar. */
-const STICKY_CATEGORIES_AFTER = 88;
 
 /** Native header logo; width capped vs screen so narrow phones still leave room for search. */
 const LOGO_ASPECT = 132 / 40;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const [categoryId, setCategoryId] = useState<number | undefined>();
-  const [scrollY, setScrollY] = useState(0);
   const [homeSearch, setHomeSearch] = useState('');
   const [debouncedHomeSearch, setDebouncedHomeSearch] = useState('');
   const lastBrowsePush = useRef<string>('');
@@ -101,55 +93,14 @@ export default function HomeScreen() {
     router.push(`/product/${p.id}`);
   };
 
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setScrollY(e.nativeEvent.contentOffset.y);
-  };
-
-  const showStickyCategories = scrollY > STICKY_CATEGORIES_AFTER;
-
   const logoSize = useMemo(() => {
     const w = Math.min(128, Math.round(windowWidth * 0.3));
     return { width: w, height: Math.round(w / LOGO_ASPECT) };
   }, [windowWidth]);
 
   const listHeader = (
-    <View style={styles.headerBlock}>
-      <View
-        style={[
-          styles.topBar,
-          {
-            paddingTop: insets.top + spacing(1),
-            paddingLeft: Math.max(insets.left, 4),
-            paddingRight: Math.max(insets.right, spacing(2)),
-          },
-        ]}
-      >
-        <Image
-          source={require('../../assets/logo.png')}
-          style={[styles.headerLogo, logoSize]}
-          contentFit="contain"
-        />
-        <TextInput
-          accessibilityLabel="Search gift cards"
-          placeholder="Search gift cards…"
-          placeholderTextColor={colors.textMuted}
-          value={homeSearch}
-          onChangeText={(t) => {
-            setHomeSearch(t);
-            if (!t.trim()) {
-              lastBrowsePush.current = '';
-            }
-            debounceSearch(t);
-          }}
-          onSubmitEditing={submitHomeSearch}
-          returnKeyType="search"
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.searchInput}
-        />
-      </View>
-      <View style={styles.navDivider} />
-      <View style={styles.spacerSm} />
+    <View className="bg-surface">
+      <View style={{ height: spacing(1) }} />
       <HomeHeroCarousel slides={heroSlides ?? []} />
       <HomeCategoryStrip
         categories={catData ?? []}
@@ -160,31 +111,74 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.root}>
-      {showStickyCategories ? (
-        <View
-          style={[
-            styles.stickyBar,
-            {
-              paddingTop: insets.top + spacing(0.5),
+    <View className="flex-1 bg-background">
+      <View
+        className="border-b border-border bg-surface"
+        style={[
+          Platform.select({
+            ios: {
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.08,
+              shadowRadius: 14,
             },
-          ]}
-        >
-          <HomeCategoryStrip
-            categories={catData ?? []}
-            selectedId={categoryId}
-            onSelect={setCategoryId}
+            android: { elevation: 6 },
+            default: {},
+          }),
+        ]}
+      >
+        <View className="flex-row items-center px-2 py-2">
+          <Image
+            source={require('../../assets/logo.png')}
+            style={[{ flexShrink: 0, marginRight: spacing(0.75) }, logoSize]}
+            contentFit="contain"
           />
+          <View
+            className="flex-1 flex-row items-center rounded-full border border-border bg-surface2"
+            style={[
+              Platform.select({
+                ios: {
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 10,
+                },
+                android: { elevation: 2 },
+                default: {},
+              }),
+            ]}
+          >
+            <View className="pl-4 pr-2">
+              <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+            </View>
+            <TextInput
+              accessibilityLabel="Search gift cards"
+              placeholder="Search gift cards…"
+              placeholderTextColor={colors.textMuted}
+              value={homeSearch}
+              onChangeText={(t) => {
+                setHomeSearch(t);
+                if (!t.trim()) {
+                  lastBrowsePush.current = '';
+                }
+                debounceSearch(t);
+              }}
+              onSubmitEditing={submitHomeSearch}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+              className="flex-1 py-3 pr-4 text-base text-text"
+              style={{ minHeight: 46 }}
+            />
+          </View>
         </View>
-      ) : null}
+      </View>
       <ProductList
         variant="rows"
         products={products}
         onProductPress={onProductPress}
         onRefresh={() => query.refetch()}
         refreshing={query.isFetching && !query.isFetchingNextPage}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         onEndReached={() => {
           if (query.hasNextPage && !query.isFetchingNextPage) {
             query.fetchNextPage();
@@ -211,60 +205,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  headerBlock: {
-    paddingBottom: spacing(1),
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: spacing(2),
-  },
-  headerLogo: {
-    flexShrink: 0,
-    marginRight: 2,
-  },
-  searchInput: {
-    flex: 1,
-    minHeight: 44,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing(1.5),
-    paddingVertical: spacing(1),
-    color: colors.text,
-    fontSize: 16,
-  },
-  spacerSm: { height: spacing(1) },
-  /** Hairline + soft drop shadow so the nav feels separated from categories (not flat/congested). */
-  navDivider: {
-    height: Math.max(StyleSheet.hairlineWidth, 1),
-    backgroundColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.09,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-      default: {},
-    }),
-  },
-  stickyBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    zIndex: 10,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-});

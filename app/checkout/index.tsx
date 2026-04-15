@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Platform, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 
@@ -58,7 +58,7 @@ export default function CheckoutScreen() {
 
   if (!authenticated) {
     return (
-      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'ios' ? insets.top : 0 }}>
         <Header title="Checkout" onBack={() => router.back()} />
         <View className="p-4">
           <Text className="text-text">Sign in to place an order.</Text>
@@ -70,7 +70,7 @@ export default function CheckoutScreen() {
 
   if (!first) {
     return (
-      <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'ios' ? insets.top : 0 }}>
         <Header title="Checkout" onBack={() => router.back()} />
         <View className="p-4">
           <Text className="text-text">Your cart is empty.</Text>
@@ -128,7 +128,7 @@ export default function CheckoutScreen() {
   });
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'ios' ? insets.top : 0 }}>
       <Header title="Checkout" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ padding: spacing(2), paddingBottom: spacing(4) }}>
         <Card>

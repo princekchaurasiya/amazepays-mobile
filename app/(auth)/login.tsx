@@ -249,7 +249,10 @@ export default function LoginScreen() {
       <View
         className="flex-1 bg-background px-4"
         style={[
-          { paddingTop: insets.top + spacing(2), paddingBottom: insets.bottom + spacing(2) },
+          {
+            paddingTop: (Platform.OS === 'ios' ? insets.top : 0) + spacing(2),
+            paddingBottom: insets.bottom + spacing(2),
+          },
         ]}
       >
         <Image

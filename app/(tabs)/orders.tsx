@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { formatDateTime, formatInr } from '@/utils/format';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OrdersScreen() {
@@ -24,7 +24,10 @@ export default function OrdersScreen() {
 
   if (!authenticated) {
     return (
-      <View className="flex-1 bg-background" style={{ paddingTop: insets.top + spacing(2) }}>
+      <View
+        className="flex-1 bg-background"
+        style={{ paddingTop: (Platform.OS === 'ios' ? insets.top : 0) + spacing(2) }}
+      >
         <EmptyState
           title="Sign in to see orders"
           description="Create an account or sign in to view your purchase history."
@@ -37,14 +40,20 @@ export default function OrdersScreen() {
 
   if (query.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center" style={{ paddingTop: insets.top }}>
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ paddingTop: Platform.OS === 'ios' ? insets.top : 0 }}
+      >
         <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top + spacing(1) }}>
+    <View
+      className="flex-1 bg-background"
+      style={{ paddingTop: (Platform.OS === 'ios' ? insets.top : 0) + spacing(1) }}
+    >
       <Text className="mb-1 px-4 text-2xl font-extrabold text-text">Orders</Text>
       <FlatList
         data={orders}

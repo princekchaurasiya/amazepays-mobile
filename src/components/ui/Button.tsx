@@ -68,7 +68,13 @@ export function Button({
           color={variant === 'primary' || variant === 'destructive' ? colors.onPrimary : colors.text}
         />
       ) : (
-        <Text className={`text-base font-semibold ${vs.label}`}>{title}</Text>
+        <Text
+          className={`text-base font-semibold ${vs.label}`}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {title}
+        </Text>
       )}
     </Pressable>
   );

@@ -1,12 +1,21 @@
 import { clearAuthToken, getAuthToken } from '@/utils/storage';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+const defaultBase = Platform.select({
+  // Android device/emulator cannot reach your PC via localhost.
+  android: 'http://10.0.2.2:8000/api/v1',
+  // iOS Simulator can reach host via localhost.
+  ios: 'http://localhost:8000/api/v1',
+  default: 'http://localhost:8000/api/v1',
+});
 
 const rawBase =
   process.env.EXPO_PUBLIC_API_URL ??
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
-  'http://localhost:8000/api/v1';
-
+  defaultBase;
+  
 /** Avoid double slashes when paths like `/catalog` are appended */
 const baseURL = rawBase.replace(/\/+$/, '');
 

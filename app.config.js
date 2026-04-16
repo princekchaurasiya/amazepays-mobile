@@ -27,6 +27,8 @@ export default ({ config }) => ({
     },
     package: 'com.amazepays.app',
     edgeToEdgeEnabled: true,
+    // Allow http:// (cleartext) API calls during development on Android.
+    usesCleartextTraffic: true,
   },
   web: {
     favicon: './assets/favicon.png',

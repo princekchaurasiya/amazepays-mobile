@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Switch, Text, View } from 'react-native';
+import { Alert, Platform, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
@@ -50,7 +50,10 @@ export default function ProfileScreen() {
 
   if (!authenticated || !user) {
     return (
-      <View className="flex-1 bg-background px-4" style={{ paddingTop: insets.top + spacing(2) }}>
+      <View
+        className="flex-1 bg-background px-4"
+        style={{ paddingTop: (Platform.OS === 'ios' ? insets.top : 0) + spacing(2) }}
+      >
         <Text className="mb-2 text-2xl font-extrabold text-text">Profile</Text>
         <Text className="text-text-muted">You are browsing as a guest.</Text>
         <Button title="Sign in" fullWidth onPress={() => router.replace('/(auth)/login')} className="mt-4" />
@@ -59,7 +62,10 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background px-4" style={{ paddingTop: insets.top + spacing(2) }}>
+    <View
+      className="flex-1 bg-background px-4"
+      style={{ paddingTop: (Platform.OS === 'ios' ? insets.top : 0) + spacing(2) }}
+    >
       <Text className="mb-2 text-2xl font-extrabold text-text">Profile</Text>
       <Card className="mb-4">
         <View className="flex-row items-center">

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { ProductCard } from './ProductCard';
 import { ProductRowCard } from './ProductRowCard';
+import type { StyleProp, ViewStyle } from 'react-native';
 
 type Props = {
   products: Product[];
@@ -24,6 +25,8 @@ type Props = {
   variant?: 'grid' | 'rows';
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   scrollEventThrottle?: number;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  refreshProgressViewOffset?: number;
 };
 
 export function ProductList({
@@ -38,6 +41,8 @@ export function ProductList({
   variant = 'grid',
   onScroll,
   scrollEventThrottle,
+  contentContainerStyle,
+  refreshProgressViewOffset,
 }: Props) {
   const isRows = variant === 'rows';
 
@@ -47,12 +52,19 @@ export function ProductList({
       keyExtractor={(item) => String(item.id)}
       numColumns={isRows ? 1 : 2}
       columnWrapperStyle={isRows ? undefined : styles.row}
-      contentContainerStyle={isRows ? styles.listRows : styles.list}
+      contentContainerStyle={[
+        isRows ? styles.listRows : styles.list,
+        contentContainerStyle,
+      ]}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={ListEmptyComponent}
       refreshControl={
         onRefresh ? (
-          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={!!refreshing}
+            onRefresh={onRefresh}
+            progressViewOffset={refreshProgressViewOffset}
+          />
         ) : undefined
       }
       onScroll={onScroll}

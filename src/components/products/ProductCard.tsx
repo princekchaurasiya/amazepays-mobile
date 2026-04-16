@@ -3,7 +3,7 @@ import type { Product } from '@/types/models';
 import { formatInr } from '@/utils/format';
 import { getListImageUrl, getProductTitle, isOutOfStock, parsePrice } from '@/utils/product';
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 type Props = {
   product: Product;
@@ -19,65 +19,37 @@ export function ProductCard({ product, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      className="m-1 max-w-[50%] flex-1 overflow-hidden rounded-xl border border-border bg-surface"
+      style={({ pressed }) => [
+        Platform.select({
+          ios: {
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+          },
+          android: { elevation: 4 },
+          default: {},
+        }),
+        pressed && { opacity: 0.9 },
+      ]}
     >
-      <View style={styles.imageWrap}>
+      <View className="relative">
         {img ? (
-          <Image source={{ uri: img }} style={styles.image} contentFit="cover" />
+          <Image source={{ uri: img }} style={{ width: '100%', aspectRatio: 1 }} contentFit="cover" />
         ) : (
-          <View style={[styles.image, styles.ph]} />
+          <View className="bg-surface2" style={{ width: '100%', aspectRatio: 1 }} />
         )}
         {oos ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Out of stock</Text>
+          <View className="absolute bottom-2 left-2 rounded-md bg-danger px-2 py-1">
+            <Text className="text-[10px] font-semibold text-on-primary">Out of stock</Text>
           </View>
         ) : null}
       </View>
-      <Text style={styles.title} numberOfLines={2}>
+      <Text className="mt-2 px-3 text-sm font-semibold text-text" numberOfLines={2}>
         {title}
       </Text>
-      <Text style={styles.price}>{formatInr(price)}</Text>
+      <Text className="px-3 pb-3 text-[13px] font-bold text-primary">{formatInr(price)}</Text>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    flex: 1,
-    margin: spacing(0.5),
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    maxWidth: '50%',
-  },
-  pressed: { opacity: 0.9 },
-  imageWrap: { position: 'relative' },
-  image: { width: '100%', aspectRatio: 1 },
-  ph: { backgroundColor: colors.surface2 },
-  badge: {
-    position: 'absolute',
-    bottom: spacing(0.5),
-    left: spacing(0.5),
-    backgroundColor: colors.danger,
-    paddingHorizontal: spacing(0.75),
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeText: { color: colors.onPrimary, fontSize: 10, fontWeight: '600' },
-  title: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-    paddingHorizontal: spacing(1),
-    marginTop: spacing(0.75),
-  },
-  price: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-    paddingHorizontal: spacing(1),
-    paddingBottom: spacing(1),
-  },
-});

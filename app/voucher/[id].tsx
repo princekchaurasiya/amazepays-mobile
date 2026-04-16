@@ -6,13 +6,7 @@ import { useFetchVoucherMutation, useOrder } from '@/hooks/useOrders';
 import { formatDate } from '@/utils/format';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Platform, Share, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -46,7 +40,7 @@ export default function VoucherDetailScreen() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[styles.root, { paddingTop: Platform.OS === 'ios' ? insets.top : 0 }]}>
       <Header title="Voucher" onBack={() => router.back()} />
       <View style={{ padding: spacing(2) }}>
         <Card>

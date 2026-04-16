@@ -9,8 +9,12 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { colors } from '@/theme';
-import { StatusBar } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar, View } from 'react-native';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,6 +23,23 @@ const queryClient = new QueryClient({
     queries: { retry: 1 },
   },
 });
+
+function SafeAreaShell({ children }: { children: React.ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      className="flex-1 bg-background"
+      style={{
+        paddingTop: insets.top,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+        paddingBottom: insets.bottom,
+      }}
+    >
+      {children}
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const router = useRouter();
@@ -57,14 +78,16 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
+      <SafeAreaProvider initialMetrics={initialWindowMetrics ?? undefined}>
+        <SafeAreaShell>
+          <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+        </SafeAreaShell>
       </SafeAreaProvider>
     </QueryClientProvider>
   );

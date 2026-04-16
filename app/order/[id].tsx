@@ -6,7 +6,7 @@ import { colors, spacing } from '@/theme';
 import { useOrder } from '@/hooks/useOrders';
 import { formatDateTime, formatInr } from '@/utils/format';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OrderDetailScreen() {
@@ -17,7 +17,7 @@ export default function OrderDetailScreen() {
 
   if (isLoading || !order) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
+      <View style={[styles.center, { paddingTop: Platform.OS === 'ios' ? insets.top : 0 }]}>
         <ActivityIndicator color={colors.primary} />
         {error ? <Text style={styles.err}>Order not found</Text> : null}
       </View>
@@ -29,7 +29,7 @@ export default function OrderDetailScreen() {
     String(order.order_status ?? '').toUpperCase() === 'COMPLETE';
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[styles.root, { paddingTop: Platform.OS === 'ios' ? insets.top : 0 }]}>
       <Header title="Order" onBack={() => router.back()} />
       <View style={{ padding: spacing(2) }}>
         <Card>

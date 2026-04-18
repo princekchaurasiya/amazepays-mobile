@@ -15,7 +15,7 @@ export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const authenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const query = useOrdersList();
+  const query = useOrdersList({ enabled: authenticated });
 
   const orders = useMemo(
     () => query.data?.pages.flatMap((p) => p.data) ?? [],
@@ -32,7 +32,7 @@ export default function OrdersScreen() {
           title="Sign in to see orders"
           description="Create an account or sign in to view your purchase history."
           actionLabel="Sign in"
-          onAction={() => router.replace('/(auth)/login')}
+          onAction={() => router.replace('/(auth)/welcome')}
         />
       </View>
     );

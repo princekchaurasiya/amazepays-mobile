@@ -7,10 +7,12 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-export function useOrdersList() {
+export function useOrdersList(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled !== false;
   return useInfiniteQuery({
     queryKey: ['orders'],
     queryFn: ({ pageParam }) => ordersApi.list(pageParam as number),
+    enabled,
     initialPageParam: 1,
     getNextPageParam: (last) => {
       if (last.meta.current_page < last.meta.last_page) {

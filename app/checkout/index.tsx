@@ -62,7 +62,7 @@ export default function CheckoutScreen() {
         <Header title="Checkout" onBack={() => router.back()} />
         <View className="p-4">
           <Text className="text-text">Sign in to place an order.</Text>
-          <Button title="Sign in" onPress={() => router.replace('/(auth)/login')} className="mt-4" />
+          <Button title="Sign in" onPress={() => router.replace('/(auth)/welcome')} className="mt-4" />
         </View>
       </View>
     );

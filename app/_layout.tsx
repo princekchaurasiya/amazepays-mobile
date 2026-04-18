@@ -1,3 +1,4 @@
+import 'react-native-reanimated';
 import { setUnauthorizedHandler } from '@/api/client';
 import { authApi } from '@/api/auth';
 import '@/sentry';
@@ -77,7 +78,7 @@ export default function RootLayout() {
   useEffect(() => {
     setUnauthorizedHandler(() => {
       useAuthStore.getState().logout();
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/welcome');
     });
     return () => setUnauthorizedHandler(null);
   }, [router]);

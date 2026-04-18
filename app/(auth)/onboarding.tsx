@@ -188,7 +188,7 @@ export default function OnboardingScreen() {
           }}
           onPress={() => {
             complete(true);
-            router.replace('/(auth)/login');
+            router.replace('/(auth)/welcome');
           }}
         />
         
@@ -204,7 +204,7 @@ export default function OnboardingScreen() {
           className="bg-transparent"
           onPress={() => {
             complete(true);
-            router.replace('/(auth)/login');
+            router.replace('/(auth)/welcome');
           }}
         />
       </Animated.View>

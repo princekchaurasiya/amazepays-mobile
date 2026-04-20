@@ -10,3 +10,8 @@ export const colors = {
 };
 
 export const spacing = (n: number) => n * 8;
+
+/** Max content width for tab screens on large phones / tablets. */
+export const layout = {
+  contentMaxWidth: 560,
+} as const;

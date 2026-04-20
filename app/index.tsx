@@ -31,7 +31,7 @@ export default function Index() {
   }
 
   if (!authenticated && !guest) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/(auth)/welcome" />;
   }
 
   return <Redirect href="/(tabs)" />;

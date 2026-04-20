@@ -47,6 +47,10 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const status = error.response?.status;
     if (status === 401 && unauthorizedHandler) {
+      const hadSession = Boolean(await getAuthToken());
+      if (!hadSession) {
+        return Promise.reject(error);
+      }
       try {
         await clearAuthToken();
       } catch {

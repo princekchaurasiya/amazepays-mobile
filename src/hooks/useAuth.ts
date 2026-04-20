@@ -30,3 +30,6 @@ export async function persistSession(token: string, user: User) {
   useAppStore.getState().setAllowGuestBrowse(false);
   useAuthStore.getState().login(user);
 }
+
+export { AuthFlowProvider, useAuthFlow } from './useAuthFlow';
+export type { VerifyOtpResult } from './useAuthFlow';

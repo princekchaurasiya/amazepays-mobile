@@ -75,4 +75,21 @@
   --color-warning-muted-bg: #ffedd5;
 
   --color-chip-active-bg: var(--brand-100);
+  --animate-gradient: gradient 3s ease infinite;
+}
+
+/* Gradient text utility */
+@utility gradient-text {
+  background: linear-gradient(90deg, #1b2b5e 0%, #f5811f 50%, #1b2b5e 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: var(--animate-gradient);
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

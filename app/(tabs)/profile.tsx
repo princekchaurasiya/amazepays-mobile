@@ -1,6 +1,6 @@
 import { useLogout } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
-import { colors, layout, spacing } from '@/theme';
+import { colors, layout } from '@/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,12 +11,16 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  StyleSheet,
   Switch,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ms } from 'react-native-size-matters';
+
+const spacing = (n: number) => ms(n * 8);
 
 function ProfileRow({
   icon,
@@ -32,27 +36,21 @@ function ProfileRow({
   onPress?: () => void;
 }) {
   const inner = (
-    <View
-      className="flex-row items-center justify-between"
-      style={{ paddingHorizontal: spacing(2.5), paddingVertical: spacing(2.5) }}
-    >
-      <View className="min-w-0 flex-1 flex-row items-center" style={{ gap: spacing(1.5) }}>
-        <View
-          className="h-11 w-11 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: colors.surface2 }}
-        >
-          <MaterialIcons name={icon} size={22} color={colors.primary} />
+    <View style={styles.profileRowInner}>
+      <View style={styles.profileRowLeft}>
+        <View style={styles.profileRowIconWrap}>
+          <MaterialIcons name={icon} size={ms(22)} color={colors.primary} />
         </View>
-        <View className="min-w-0 flex-1 pr-2">
-          <Text className="text-sm font-semibold text-text" numberOfLines={1}>
+        <View style={styles.profileRowTextWrap}>
+          <Text style={styles.profileRowTitle} numberOfLines={1}>
             {title}
           </Text>
-          <Text className="mt-0.5 text-xs text-text-muted" numberOfLines={2}>
+          <Text style={styles.profileRowSubtitle} numberOfLines={2}>
             {subtitle}
           </Text>
         </View>
       </View>
-      <View className="shrink-0">{right}</View>
+      <View style={styles.shrink0}>{right}</View>
     </View>
   );
 
@@ -61,7 +59,7 @@ function ProfileRow({
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
-          { backgroundColor: pressed ? colors.surface2 : colors.surface },
+          { backgroundColor: pressed ? colors.surface2 : colors.surface }
         ]}
       >
         {inner}
@@ -133,51 +131,51 @@ export default function ProfileScreen() {
 
   const header = (
     <View
-      className="flex-row items-center justify-between border-b border-border bg-surface"
       style={{
+        ...styles.header,
         minHeight: spacing(8),
         paddingHorizontal: horizontalPad,
         paddingVertical: spacing(1.5),
       }}
     >
-      <View className="min-w-0 flex-1 flex-row items-center" style={{ gap: spacing(1.5) }}>
-        <Pressable onPress={onBack} hitSlop={12} className="active:opacity-70">
-          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+      <View style={styles.headerLeft}>
+        <Pressable onPress={onBack} hitSlop={ms(12)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <MaterialIcons name="arrow-back" size={ms(24)} color={colors.primary} />
         </Pressable>
         <Text
-          className="min-w-0 flex-1 text-xl font-bold text-primary"
+          style={styles.headerTitle}
           numberOfLines={1}
-          style={{ letterSpacing: -0.3 }}
         >
           Account Profile
         </Text>
       </View>
-      <Pressable hitSlop={12} onPress={() => Alert.alert('Menu', 'More options coming soon.')}>
-        <MaterialIcons name="more-vert" size={24} color={colors.primary} />
+      <Pressable hitSlop={ms(12)} onPress={() => Alert.alert('Menu', 'More options coming soon.')}>
+        <MaterialIcons name="more-vert" size={ms(24)} color={colors.primary} />
       </Pressable>
     </View>
   );
 
   if (!authenticated || !user) {
     return (
-      <View className="flex-1 bg-background">
+      <View style={styles.screen}>
         {header}
-        <View className="flex-1" style={{ paddingHorizontal: horizontalPad, paddingTop: spacing(3) }}>
-          <Text className="mb-2 text-base text-text-muted">You are browsing as a guest.</Text>
+        <View style={{ ...styles.guestWrap, paddingHorizontal: horizontalPad, paddingTop: spacing(3) }}>
+          <Text style={styles.guestText}>You are browsing as a guest.</Text>
           <Pressable
             onPress={() => router.replace('/(auth)/welcome')}
-            className=" flex-row gap-3 items-center justify-center rounded-xl active:opacity-90"
-            style={{
-              marginTop: spacing(2),
-              paddingVertical: spacing(2),
-              backgroundColor: colors.accent,
-            }}
-          ><>
-          <MaterialIcons name="person" size={22} color={colors.background} />
-            <Text className="text-background font-bold" >
+            style={({ pressed }) => [
+              styles.guestButton,
+              {
+                marginTop: spacing(2),
+                paddingVertical: spacing(2),
+                opacity: pressed ? 0.9 : 1,
+              },
+            ]}
+          >
+            <MaterialIcons name="person" size={ms(22)} color={colors.background} />
+            <Text style={styles.guestButtonText}>
               Sign in
             </Text>
-          </>
           </Pressable>
         </View>
       </View>
@@ -190,36 +188,34 @@ export default function ProfileScreen() {
   const pinSet = Boolean(user.transaction_pin_set);
 
   return (
-    <View className="flex-1 bg-background">
+    <View style={styles.screen}>
       {header}
 
       <ScrollView
-        className="flex-1"
+        style={styles.scroll}
         contentContainerStyle={scrollContentStyle}
         showsVerticalScrollIndicator={false}
       >
         <View
-          className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
           style={{
+            ...styles.profileCard,
             paddingHorizontal: spacing(3),
             paddingVertical: spacing(4),
             marginBottom: spacing(4),
           }}
         >
           <View
-            className="pointer-events-none absolute rounded-full"
             style={{
+              ...styles.profileCardBlob,
               width: spacing(16),
               height: spacing(16),
               top: -spacing(8),
               right: -spacing(8),
-              backgroundColor: colors.primaryBright,
-              opacity: 0.06,
             }}
           />
 
-          <View className="w-full flex-col items-center" style={{ gap: spacing(3) }}>
-            <View className="relative" style={{ width: avatarSize, height: avatarSize }}>
+          <View style={styles.profileCardBody}>
+            <View style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize }}>
               <LinearGradient
                 colors={[colors.primary, colors.primaryBright]}
                 start={{ x: 0, y: 1 }}
@@ -231,114 +227,103 @@ export default function ProfileScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 6 },
+                  shadowOffset: { width: 0, height: ms(6) },
                   shadowOpacity: 0.12,
-                  shadowRadius: 10,
-                  elevation: 6,
+                  shadowRadius: ms(10),
+                  elevation: ms(6),
                 }}
               >
                 <Text
-                  className="font-extrabold text-on-primary"
-                  style={{ fontSize: Math.round(avatarSize * 0.38) }}
+                  style={[styles.avatarLetter, { fontSize: Math.round(avatarSize * 0.38) }]}
                 >
                   {letter}
                 </Text>
               </LinearGradient>
               <View
-                className="absolute items-center justify-center rounded-full border-4 border-surface"
                 style={{
+                  ...styles.verifiedBadge,
                   top: spacing(0.5),
                   left: spacing(0.5),
                   width: spacing(3),
                   height: spacing(3),
-                  backgroundColor: colors.accent,
                 }}
               >
-                <MaterialIcons name="verified" size={14} color={colors.onPrimary} />
+                <MaterialIcons name="verified" size={ms(14)} color={colors.onPrimary} />
               </View>
             </View>
 
-            <View className="w-full items-center" style={{ gap: spacing(1) }}>
+            <View style={styles.userDetailsWrap}>
               <Text
-                className="text-center text-2xl font-extrabold text-primary"
-                style={{ letterSpacing: -0.4 }}
+                style={styles.userName}
               >
                 {user.name}
               </Text>
-              <View className="w-full items-center" style={{ gap: spacing(0.5) }}>
-                <View className="max-w-full flex-row items-center justify-center" style={{ gap: spacing(1) }}>
-                  <MaterialIcons name="mail-outline" size={16} color={colors.textMuted} />
-                  <Text className="max-w-[90%] text-sm font-medium text-text-muted" numberOfLines={2}>
+              <View style={styles.userSubDetailsWrap}>
+                <View style={styles.userContactRow}>
+                  <MaterialIcons name="mail-outline" size={ms(16)} color={colors.textMuted} />
+                  <Text style={styles.userContactText} numberOfLines={2}>
                     {user.email}
                   </Text>
                 </View>
                 {user.mobile ? (
-                  <View className="flex-row items-center justify-center" style={{ gap: spacing(1) }}>
-                    <MaterialIcons name="call" size={16} color={colors.textMuted} />
-                    <Text className="text-sm font-medium text-text-muted">{user.mobile}</Text>
+                  <View style={styles.userMobileRow}>
+                    <MaterialIcons name="call" size={ms(16)} color={colors.textMuted} />
+                    <Text style={styles.userContactText}>{user.mobile}</Text>
                   </View>
                 ) : null}
               </View>
             </View>
 
             <Pressable
-              hitSlop={8}
+              hitSlop={ms(8)}
               onPress={() => Alert.alert('Edit profile', 'Profile editing is coming soon.')}
-              className="items-center justify-center rounded-full active:opacity-90"
-              style={{
-                width: spacing(6),
-                height: spacing(6),
-                backgroundColor: colors.primary,
-              }}
+              style={({ pressed }) => [
+                styles.editButton,
+                { width: spacing(6), height: spacing(6), opacity: pressed ? 0.9 : 1 },
+              ]}
             >
-              <MaterialIcons name="edit" size={20} color={colors.onPrimary} />
+              <MaterialIcons name="edit" size={ms(20)} color={colors.onPrimary} />
             </Pressable>
           </View>
         </View>
 
-        <Text className="mb-3 px-0.5 text-lg font-bold text-primary">Account Security</Text>
-        <View
-          className="mb-8 overflow-hidden rounded-2xl border border-border bg-surface"
-          style={{ marginBottom: spacing(4) }}
-        >
+        <Text style={styles.sectionTitle}>Account Security</Text>
+        <View style={[styles.sectionCard, { marginBottom: spacing(4) }]}>
           <ProfileRow
             icon="admin-panel-settings"
             title="Roles"
             subtitle="Access level"
             right={
               <View
-                className="max-w-[140px] rounded-full px-3 py-1.5"
-                style={{ backgroundColor: colors.chipActiveBg }}
+                style={styles.roleChip}
               >
                 <Text
-                  className="text-center text-[10px] font-bold uppercase text-primary"
                   numberOfLines={1}
-                  style={{ letterSpacing: 0.8 }}
+                  style={styles.roleChipText}
                 >
                   {roleLabel}
                 </Text>
               </View>
             }
           />
-          <View style={{ height: 1, backgroundColor: colors.border }} />
+          <View style={styles.divider} />
           <ProfileRow
             icon="phonelink-lock"
             title="2FA"
             subtitle="Two-factor authentication"
             onPress={() => router.push('/(auth)/two-factor')}
             right={
-              <View className="flex-row items-center" style={{ gap: spacing(0.5) }}>
+              <View style={styles.rowRight}>
                 <Text
-                  className="text-xs font-semibold"
-                  style={{ color: twoFaOn ? colors.primary : colors.danger }}
+                  style={{ ...styles.rowRightText, color: twoFaOn ? colors.primary : colors.danger }}
                 >
                   {twoFaOn ? 'On' : 'Off'}
                 </Text>
-                <MaterialIcons name="chevron-right" size={22} color={colors.textMuted} />
+                <MaterialIcons name="chevron-right" size={ms(22)} color={colors.textMuted} />
               </View>
             }
           />
-          <View style={{ height: 1, backgroundColor: colors.border }} />
+          <View style={styles.divider} />
           <ProfileRow
             icon="lock"
             title="Transaction PIN"
@@ -347,36 +332,30 @@ export default function ProfileScreen() {
               Alert.alert('Transaction PIN', pinSet ? 'PIN is set.' : 'PIN is not set yet.')
             }
             right={
-              <View className="flex-row items-center" style={{ gap: spacing(0.5) }}>
+              <View style={styles.rowRight}>
                 <Text
-                  className="text-xs font-semibold"
-                  style={{ color: pinSet ? colors.text : colors.textMuted }}
+                  style={{ ...styles.rowRightText, color: pinSet ? colors.text : colors.textMuted }}
                 >
                   {pinSet ? 'Set' : 'Not set'}
                 </Text>
-                <MaterialIcons name="chevron-right" size={22} color={colors.textMuted} />
+                <MaterialIcons name="chevron-right" size={ms(22)} color={colors.textMuted} />
               </View>
             }
           />
         </View>
 
-        <Text className="mb-3 px-0.5 text-lg font-bold text-primary">Notifications</Text>
+        <Text style={styles.sectionTitle}>Notifications</Text>
         <View
-          className="mb-8 rounded-2xl border border-border bg-surface"
-          style={{ padding: spacing(2.5), marginBottom: spacing(4) }}
+          style={{ ...styles.sectionCard, padding: spacing(2.5), marginBottom: spacing(4) }}
         >
           <View
-            className="flex-row items-center justify-between"
-            style={{ marginBottom: pushSupported ? 0 : spacing(2) }}
+            style={{ ...styles.notificationsTopRow, marginBottom: pushSupported ? 0 : spacing(2) }}
           >
-            <View className="min-w-0 flex-1 flex-row items-center" style={{ gap: spacing(1.5) }}>
-              <View
-                className="h-11 w-11 shrink-0 items-center justify-center rounded-lg"
-                style={{ backgroundColor: colors.surface2 }}
-              >
-                <MaterialIcons name="notifications-active" size={22} color={colors.primary} />
+            <View style={styles.profileRowLeft}>
+              <View style={styles.profileRowIconWrap}>
+                <MaterialIcons name="notifications-active" size={ms(22)} color={colors.primary} />
               </View>
-              <Text className="min-w-0 flex-1 text-sm font-semibold text-text" numberOfLines={2}>
+              <Text style={styles.profileRowTitle} numberOfLines={2}>
                 Push notifications
               </Text>
             </View>
@@ -391,52 +370,41 @@ export default function ProfileScreen() {
           </View>
           {!pushSupported ? (
             <View
-              className="flex-row rounded-xl border border-border"
               style={{
-                gap: spacing(1.5),
+                ...styles.pushInfoBox,
                 padding: spacing(2),
-                backgroundColor: colors.surface2,
               }}
             >
-              <MaterialIcons name="info" size={22} color={colors.accentDark} style={{ marginTop: 2 }} />
-              <Text className="flex-1 text-xs leading-5 text-text-muted">
+              <MaterialIcons name="info" size={ms(22)} color={colors.accentDark} style={{ marginTop: spacing(0.25) }} />
+              <Text style={styles.pushInfoText}>
                 Push notifications are unavailable in Expo Go. Use a development build to test them.
               </Text>
             </View>
           ) : null}
         </View>
 
-        <View className="flex-col" style={{ gap: spacing(2), marginTop: spacing(1) }}>
+        <View style={styles.bottomActionsWrap}>
           <Pressable
             disabled={logout.isPending}
             onPress={() => logout.mutate()}
-            className="flex-row items-center justify-center rounded-xl active:opacity-90"
-            style={{
-              paddingVertical: spacing(2),
-              gap: spacing(1.5),
-              backgroundColor: colors.accent,
-              shadowColor: colors.accent,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.2,
-              shadowRadius: 8,
-              elevation: 5,
-            }}
+            style={({ pressed }) => [
+              styles.signOutButton,
+              {
+                paddingVertical: spacing(2),
+                opacity: pressed ? 0.9 : 1,
+              },
+            ]}
           >
             {logout.isPending ? (
               <ActivityIndicator color={colors.accentDark} />
             ) : (
-              <>
-                <MaterialIcons name="logout" size={22} color={colors.background} />
-                <Text className=" font-bold text-background" >
-                  Sign Out
-                </Text>
-              </>
+              <View style={styles.signOutInner}>
+                <MaterialIcons name="logout" size={ms(22)} color={colors.background} />
+                <Text style={styles.signOutText}>Sign Out</Text>
+              </View>
             )}
           </Pressable>
-          <Text
-            className="text-center text-[10px] font-semibold uppercase text-text-muted"
-            style={{ letterSpacing: 1.5 }}
-          >
+          <Text style={styles.versionText}>
             {`Amaze Pays v${appVersion} • Secure Banking`}
           </Text>
         </View>
@@ -444,3 +412,267 @@ export default function ProfileScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scroll: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: ms(1),
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  headerLeft: {
+    minWidth: 0,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.5),
+  },
+  headerTitle: {
+    minWidth: 0,
+    flex: 1,
+    fontSize: ms(20),
+    fontWeight: '600',
+    color: colors.primary,
+    letterSpacing: ms(-0.3),
+  },
+  guestWrap: { flex: 1 },
+  guestText: {
+    marginBottom: spacing(1),
+    fontSize: ms(16),
+    color: colors.textMuted,
+  },
+  guestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(1.5),
+    borderRadius: ms(12),
+    backgroundColor: colors.accent,
+  },
+  guestButtonText: {
+    color: colors.background,
+    fontWeight: '600',
+    fontSize: ms(16),
+  },
+  profileCard: {
+    overflow: 'hidden',
+    borderRadius: ms(16),
+    borderWidth: ms(1),
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  profileCardBlob: {
+    position: 'absolute',
+    pointerEvents: 'none',
+    borderRadius: ms(999),
+    backgroundColor: colors.primaryBright,
+    opacity: 0.06,
+  },
+  profileCardBody: {
+    width: '100%',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing(3),
+  },
+  avatarWrap: { position: 'relative' },
+  avatarLetter: {
+    fontWeight: '700',
+    color: colors.onPrimary,
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: ms(999),
+    borderWidth: ms(4),
+    borderColor: colors.surface,
+    backgroundColor: colors.accent,
+  },
+  userDetailsWrap: {
+    width: '100%',
+    alignItems: 'center',
+    gap: spacing(1),
+  },
+  userName: {
+    textAlign: 'center',
+    fontSize: ms(24),
+    fontWeight: '700',
+    color: colors.primary,
+    letterSpacing: ms(-0.4),
+  },
+  userSubDetailsWrap: {
+    width: '100%',
+    alignItems: 'center',
+    gap: spacing(0.5),
+  },
+  userContactRow: {
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(1),
+  },
+  userMobileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(1),
+  },
+  userContactText: {
+    maxWidth: '90%',
+    fontSize: ms(14),
+    fontWeight: '400',
+    color: colors.textMuted,
+  },
+  editButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: ms(999),
+    backgroundColor: colors.primary,
+  },
+  sectionTitle: {
+    marginBottom: spacing(1.5),
+    paddingHorizontal: spacing(0.0625),
+    fontSize: ms(18),
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  sectionCard: {
+    overflow: 'hidden',
+    borderRadius: ms(16),
+    borderWidth: ms(1),
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  profileRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing(2.5),
+    paddingVertical: spacing(2.5),
+  },
+  profileRowLeft: {
+    minWidth: 0,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.5),
+  },
+  profileRowIconWrap: {
+    width: ms(44),
+    height: ms(44),
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: ms(8),
+    backgroundColor: colors.surface2,
+  },
+  profileRowTextWrap: {
+    minWidth: 0,
+    flex: 1,
+    paddingRight: spacing(0.25),
+  },
+  profileRowTitle: {
+    fontSize: ms(14),
+    fontWeight: '500',
+    color: colors.text,
+  },
+  profileRowSubtitle: {
+    marginTop: spacing(0.5),
+    fontSize: ms(12),
+    color: colors.textMuted,
+  },
+  shrink0: { flexShrink: 0 },
+  roleChip: {
+    maxWidth: ms(140),
+    borderRadius: ms(999),
+    paddingHorizontal: spacing(1.5),
+    paddingVertical: spacing(0.75),
+    backgroundColor: colors.chipActiveBg,
+  },
+  roleChipText: {
+    textAlign: 'center',
+    fontSize: ms(10),
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    color: colors.primary,
+    letterSpacing: ms(0.8),
+  },
+  divider: {
+    height: ms(1),
+    backgroundColor: colors.border,
+  },
+  rowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(0.5),
+  },
+  rowRightText: {
+    fontSize: ms(12),
+    fontWeight: '500',
+  },
+  notificationsTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pushInfoBox: {
+    flexDirection: 'row',
+    gap: spacing(1.5),
+    borderRadius: ms(12),
+    borderWidth: ms(1),
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
+  },
+  pushInfoText: {
+    flex: 1,
+    fontSize: ms(12),
+    lineHeight: ms(20),
+    color: colors.textMuted,
+  },
+  bottomActionsWrap: {
+    flexDirection: 'column',
+    gap: spacing(2),
+    marginTop: spacing(1),
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: ms(12),
+    backgroundColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: ms(4) },
+    shadowOpacity: 0.2,
+    shadowRadius: ms(8),
+    elevation: ms(5),
+  },
+  signOutInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(1.5),
+  },
+  signOutText: {
+    fontWeight: '600',
+    color: colors.background,
+    fontSize: ms(16),
+  },
+  versionText: {
+    textAlign: 'center',
+    fontSize: ms(10),
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+    letterSpacing: ms(1.5),
+  },
+});

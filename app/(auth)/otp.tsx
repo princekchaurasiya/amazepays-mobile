@@ -1,8 +1,9 @@
-import { authColors, authFonts, grid, useAuthLayout } from '@/auth/authTheme';
-import { AuthButton } from '@/components/auth/AuthButton';
-import { OtpBox } from '@/components/auth/OtpBox';
+import { Button } from '@/components/ui/Button';
 import { persistSession } from '@/hooks/useAuth';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
+import { Colors } from '@/constants/colors';
+import { colors, spacing } from '@/theme';
+import { ms } from '@/utils/scaling';
 import { otpCodeSchema } from '@/utils/validation';
 import * as Haptics from 'expo-haptics';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,6 +14,7 @@ import {
   Pressable,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,16 +24,16 @@ const OTP_LEN = 6;
 export default function OtpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const layout = useAuthLayout();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ phone?: string }>();
   const phone = typeof params.phone === 'string' ? params.phone : '';
 
   const { verifyOtp, resendOtp, resendIn, busy, error, setError } = useAuthFlow();
 
   const [otpBoxes, setOtpBoxes] = useState<string[]>(() => Array(OTP_LEN).fill(''));
-  const [shakeKey, setShakeKey] = useState(0);
   const [success, setSuccess] = useState(false);
   const otpRefs = useRef<(TextInput | null)[]>([]);
+  const hiddenOtpRef = useRef<TextInput | null>(null);
   const verifyInFlight = useRef(false);
 
   const otpJoined = otpBoxes.join('');
@@ -45,39 +47,32 @@ export default function OtpScreen() {
       const parsed = otpCodeSchema.safeParse({ otp: code });
       if (!parsed.success) {
         setError(parsed.error.issues[0]?.message ?? 'Invalid code');
-        setShakeKey((k) => k + 1);
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         return;
       }
+
       if (verifyInFlight.current) return;
       verifyInFlight.current = true;
       setError(null);
+
       try {
         const result = await verifyOtp(phone, code);
+
         if (result.kind === 'error') {
           setError(result.message);
-          setShakeKey((k) => k + 1);
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           return;
         }
+
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
         if (result.kind === 'logged_in') {
-          setSuccess(true);
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           await persistSession(result.token, result.user);
-          setTimeout(() => router.replace('/(tabs)'), 420);
-          return;
-        }
-        if (result.kind === 'needs_profile') {
-          setSuccess(true);
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setTimeout(() => router.replace('/(auth)/complete-profile'), 420);
-          return;
-        }
-        if (result.kind === '2fa_required') {
-          setSuccess(true);
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setTimeout(() => router.replace('/(auth)/two-factor'), 420);
-          return;
+          setTimeout(() => router.replace('/(tabs)'), 400);
+        } else if (result.kind === 'needs_profile') {
+          setTimeout(() => router.replace('/(auth)/complete-profile'), 400);
+        } else if (result.kind === '2fa_required') {
+          setTimeout(() => router.replace('/(auth)/two-factor'), 400);
         }
       } finally {
         verifyInFlight.current = false;
@@ -86,28 +81,26 @@ export default function OtpScreen() {
     [phone, router, setError, verifyOtp]
   );
 
-  const maybeAutoVerify = useCallback(
-    (joined: string) => {
-      if (joined.length !== 6 || success || busy) return;
-      requestAnimationFrame(() => {
-        void runVerify(joined);
-      });
-    },
-    [busy, runVerify, success]
-  );
+  const maybeAutoVerify = (joined: string) => {
+    if (joined.length === 6 && !busy) {
+      requestAnimationFrame(() => runVerify(joined));
+    }
+  };
 
   const setOtpDigit = (index: number, char: string) => {
     const d = char.replace(/\D/g, '').slice(-1);
+
     setOtpBoxes((prev) => {
       const next = [...prev];
       next[index] = d;
+
       const joined = next.join('');
-      if (joined.length === 6) {
-        maybeAutoVerify(joined);
-      }
+      if (joined.length === 6) maybeAutoVerify(joined);
+
       if (d && index < OTP_LEN - 1) {
         requestAnimationFrame(() => otpRefs.current[index + 1]?.focus());
       }
+
       return next;
     });
   };
@@ -136,127 +129,159 @@ export default function OtpScreen() {
     const next = Array(OTP_LEN)
       .fill('')
       .map((_, i) => digits[i] ?? '');
+
     setOtpBoxes(next);
+
     const joined = next.join('');
-    if (joined.length === 6) {
-      maybeAutoVerify(joined);
-    }
-    const last = Math.min(Math.max(digits.length - 1, 0), OTP_LEN - 1);
-    requestAnimationFrame(() => otpRefs.current[last]?.focus());
+    if (joined.length === 6) maybeAutoVerify(joined);
   };
 
   if (!phone || phone.length !== 10) {
     return <Redirect href="/(auth)/welcome" />;
   }
 
-  const cardPad = layout.horizontal;
+  const isWide = width >= 768;
+  const contentWidth = Math.min(width - spacing(6), ms(560));
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: authColors.canvas }}
+      className="flex-1"
+      style={{ backgroundColor: Colors.neutral[50] }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      {/* Hidden OTP autofill */}
       <TextInput
+        ref={hiddenOtpRef}
         value={otpJoined}
         onChangeText={fillFromPaste}
         keyboardType="number-pad"
         textContentType="oneTimeCode"
         autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
-        caretHidden
-        style={{ position: 'absolute', width: 1, height: 1, opacity: 0.02 }}
-        importantForAutofill="yes"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
       />
+
       <View
+        className="flex-1"
         style={{
-          flex: 1,
-          paddingTop: insets.top + grid(4),
-          paddingBottom: insets.bottom + grid(4),
-          paddingHorizontal: layout.isWideCard ? Math.max(grid(4), (layout.width - layout.maxContentWidth) / 2) : cardPad,
-          maxWidth: layout.isWideCard ? layout.maxContentWidth : undefined,
-          alignSelf: layout.isWideCard ? 'center' : 'stretch',
-          width: layout.isWideCard ? '100%' : undefined,
+          paddingTop: insets.top + spacing(1),
+          paddingBottom: insets.bottom + spacing(2),
+          paddingHorizontal: spacing(2),
         }}
       >
-        <Text
+        <View
+          className="self-center w-full rounded-2xl border border-border bg-surface"
           style={{
-            fontFamily: authFonts.display,
-            fontSize: layout.mode === 'compact' ? 26 : 30,
-            letterSpacing: -0.4,
-            color: authColors.text,
-            marginBottom: grid(2),
+            maxWidth: contentWidth,
+            paddingHorizontal: spacing(2.5),
+            paddingVertical: spacing(3),
           }}
         >
-          Enter OTP
-        </Text>
-        <Text style={{ fontFamily: authFonts.body, fontSize: 15, color: authColors.textMuted, marginBottom: grid(6) }}>
-          We sent a 6-digit code to{' '}
-          <Text style={{ fontFamily: authFonts.bodyMedium, color: authColors.text }}>+91 {phone}</Text>
-        </Text>
-
-        <View style={{ flexDirection: 'row', gap: grid(3), marginBottom: grid(4), justifyContent: 'center' }}>
-          {otpBoxes.map((digit, i) => (
-            <OtpBox
-              key={i}
-              ref={(el) => {
-                otpRefs.current[i] = el;
-              }}
-              index={i}
-              value={digit}
-              onChangeText={(t) => setOtpDigit(i, t)}
-              onKeyPress={(key) => onOtpKeyPress(i, key)}
-              shakeToken={shakeKey}
-              success={success}
-              editable={!busy}
-            />
-          ))}
-        </View>
-
-        {error ? (
-          <Text style={{ marginBottom: grid(3), color: authColors.error, fontFamily: authFonts.body, textAlign: 'center' }}>
-            {error}
-          </Text>
-        ) : null}
-
-        <AuthButton
-          title="Continue"
-          fullWidth
-          loading={busy}
-          disabled={busy || otpJoined.length !== 6}
-          onPress={() => runVerify(otpJoined)}
-        />
-
-        <Pressable
-          onPress={onResend}
-          disabled={resendIn > 0 || busy}
-          style={({ pressed }) => ({
-            marginTop: grid(4),
-            alignItems: 'center',
-            opacity: pressed ? 0.75 : 1,
-          })}
-        >
           <Text
+            className="text-center font-semibold"
             style={{
-              fontFamily: authFonts.label,
-              fontSize: 15,
-              color: resendIn > 0 ? authColors.textMuted : authColors.primary,
+              fontSize: isWide ? ms(30) : ms(26),
+              color: colors.primary,
+              marginBottom: spacing(1),
             }}
           >
-            {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+            Enter OTP
           </Text>
-        </Pressable>
 
-        <Pressable
-          onPress={onChangeNumber}
-          style={({ pressed }) => ({
-            marginTop: grid(3),
-            alignItems: 'center',
-            opacity: pressed ? 0.75 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: authFonts.body, fontSize: 15, color: authColors.textMuted }}>Change number</Text>
-        </Pressable>
+          <Text
+            className="text-center"
+            style={{ fontSize: ms(15), color: colors.textMuted, marginBottom: spacing(3) }}
+          >
+            We sent a code to{' '}
+            <Text style={{ color: colors.text, fontWeight: '600' }}>+91 {phone}</Text>
+          </Text>
+
+          {/* OTP Boxes */}
+          <Pressable onPress={() => hiddenOtpRef.current?.focus()}>
+            <View className="flex-row justify-center" style={{ marginBottom: spacing(3) }}>
+              {otpBoxes.map((digit, i) => (
+                <View key={i} style={{ marginHorizontal: spacing(0.5) }}>
+                  <TextInput
+                    ref={(el) => {
+                      otpRefs.current[i] = el;
+                    }}
+                    value={digit}
+                    onChangeText={(t) => setOtpDigit(i, t)}
+                    onKeyPress={({ nativeEvent }) => onOtpKeyPress(i, nativeEvent.key)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    editable={!busy}
+                    style={{
+                      width: isWide ? ms(50) : ms(44),
+                      height: isWide ? ms(58) : ms(52),
+                      borderRadius: spacing(1.5),
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      textAlign: 'center',
+                      fontSize: ms(20),
+                      color: colors.text,
+                      backgroundColor: colors.surface2,
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+          </Pressable>
+
+          {error && (
+            <Text
+              className="text-center"
+              style={{ marginBottom: spacing(2), color: colors.danger }}
+            >
+              {error}
+            </Text>
+          )}
+
+          {/* ✅ Button wrapped */}
+          <View style={{ marginBottom: spacing(2) }}>
+            <Button
+              title="Continue"
+              fullWidth
+              loading={busy}
+              disabled={busy || otpJoined.length !== 6}
+              onPress={() => runVerify(otpJoined)}
+            />
+          </View>
+
+          {/* Resend */}
+          <View className="items-center">
+            <Pressable
+              onPress={onResend}
+              disabled={resendIn > 0 || busy}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.75 : 1,
+                paddingVertical: spacing(1),
+              })}
+            >
+              <Text
+                style={{
+                  fontSize: ms(15),
+                  color: resendIn > 0 ? colors.textMuted : colors.primary,
+                }}
+              >
+                {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend code'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Change number */}
+          <View className="items-center" style={{ marginTop: spacing(1.5) }}>
+            <Pressable
+              onPress={onChangeNumber}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.75 : 1,
+              })}
+            >
+              <Text style={{ fontSize: ms(15), color: colors.textMuted }}>
+                Change number
+              </Text>
+            </Pressable>
+          </View>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

@@ -1,21 +1,24 @@
-import { authColors, authFonts, authRadii, grid, useAuthLayout } from '@/auth/authTheme';
-import { AuthButton } from '@/components/auth/AuthButton';
-import { AuthInput } from '@/components/auth/AuthInput';
+import { Button } from '@/components/ui/Button';
+import { Colors } from '@/constants/colors';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 import { useAppStore } from '@/stores/appStore';
+import { colors, spacing } from '@/theme';
+import { ms } from '@/utils/scaling';
 import { normalizeIndianMobile, phoneSchema } from '@/utils/validation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, {
@@ -41,16 +44,20 @@ function formatPhoneDisplay(digits: string) {
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const setGuest = useAppStore((s) => s.setAllowGuestBrowse);
   const { sendOtp, busy, error, setError } = useAuthFlow();
-  const layout = useAuthLayout();
 
+  // ✅ FIX: infinite smooth animation
   const logoScale = useSharedValue(1);
   useEffect(() => {
     logoScale.value = withRepeat(
-      withSequence(withTiming(1.04, { duration: 700 }), withTiming(1, { duration: 700 })),
-      2,
-      false
+      withSequence(
+        withTiming(1.04, { duration: 900 }),
+        withTiming(1, { duration: 900 })
+      ),
+      -1,
+      true
     );
   }, [logoScale]);
 
@@ -63,8 +70,9 @@ export default function WelcomeScreen() {
     defaultValues: { mobile: '' },
   });
 
-  const logoWidth = layout.width * 0.4;
-  const landscapeSplit = layout.landscape && layout.width >= 600;
+  const isWide = width >= 768;
+  const contentWidth = Math.min(width - spacing(6), ms(560));
+  const logoWidth = isWide ? ms(210) : Math.min(ms(150), width * 0.38);
 
   const onContinue = phoneForm.handleSubmit(async ({ mobile }) => {
     setError(null);
@@ -83,147 +91,167 @@ export default function WelcomeScreen() {
     router.replace('/(tabs)');
   }, [router, setGuest]);
 
-  const cardShellStyle = useMemo(
-    () =>
-      layout.isWideCard
-        ? {
-            borderRadius: authRadii.card,
-            backgroundColor: authColors.background,
-            paddingHorizontal: layout.horizontal,
-            paddingVertical: grid(6),
-            maxWidth: layout.maxContentWidth,
-            width: '100%' as const,
-            alignSelf: 'center' as const,
-          }
-        : { flex: 1 },
-    [layout.horizontal, layout.isWideCard, layout.maxContentWidth]
-  );
-
-  const logoBlock = (width: number, withBottomMargin = true) => (
+  const logoBlock = () => (
     <Animated.View
-      style={[{ alignSelf: 'center', marginBottom: withBottomMargin ? grid(5) : 0 }, logoPulse]}
+      className="items-center justify-center"
+      style={[{ marginBottom: spacing(4) }, logoPulse]}
     >
       <Image
         source={require('../../assets/logo.png')}
-        style={{ width, aspectRatio: LOGO_ASPECT }}
+        style={{ width: logoWidth, aspectRatio: LOGO_ASPECT }}
         contentFit="contain"
-        accessibilityLabel="AmazePays"
       />
     </Animated.View>
   );
 
-  const headline = (
-    <>
-      {!landscapeSplit ? logoBlock(logoWidth) : null}
-      <Text
-        style={{
-          fontFamily: authFonts.display,
-          fontSize: layout.mode === 'compact' ? 28 : 32,
-          letterSpacing: -0.5,
-          color: authColors.text,
-          marginBottom: grid(2),
-        }}
-      >
-        Welcome
-      </Text>
-      <Text
-        style={{
-          fontFamily: authFonts.body,
-          fontSize: 15,
-          lineHeight: 22,
-          color: authColors.textMuted,
-          marginBottom: grid(6),
-        }}
-      >
-        Sign in with mobile — no password
-      </Text>
-    </>
-  );
-
-  const formFields = (
-    <>
-      {headline}
-      <Controller
-        control={phoneForm.control}
-        name="mobile"
-        render={({ field: { onChange, onBlur, value }, fieldState }) => (
-          <AuthInput
-            label="Mobile number"
-            prefix="+91"
-            value={formatPhoneDisplay(value)}
-            onChangeText={(t) => onChange(normalizeIndianMobile(t))}
-            onBlur={onBlur}
-            keyboardType="phone-pad"
-            placeholder="98765 43210"
-            maxLength={12}
-            error={fieldState.error?.message}
-            autoComplete="tel"
-            textContentType="telephoneNumber"
-          />
-        )}
-      />
-
-      {error ? (
-        <Text style={{ marginBottom: grid(2), color: authColors.error, fontFamily: authFonts.body }}>{error}</Text>
-      ) : null}
-
-      <AuthButton title="Continue" fullWidth onPress={onContinue} loading={busy} disabled={busy} />
-
-      <Pressable
-        onPress={browse}
-        style={({ pressed }) => ({
-          marginTop: grid(4),
-          paddingVertical: grid(2),
-          alignItems: 'center',
-          opacity: pressed ? 0.7 : 1,
-        })}
-      >
-        <Text style={{ fontFamily: authFonts.body, fontSize: 15, color: authColors.textMuted }}>
-          Browse without account
-        </Text>
-      </Pressable>
-    </>
-  );
-
-  const scrollBody = (
-    <ScrollView
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{
-        flexGrow: 1,
-        justifyContent: 'center',
-        paddingBottom: grid(4),
-      }}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={cardShellStyle}>{formFields}</View>
-    </ScrollView>
-  );
-
-  const landscapeLogoW = Math.min(layout.height * 0.36, 220);
-
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: authColors.canvas }}
+      className="flex-1"
+      style={{ backgroundColor: Colors.neutral[50] }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View
+        className="flex-1"
         style={{
-          flex: 1,
-          paddingTop: insets.top + grid(2),
-          paddingBottom: insets.bottom + grid(2),
-          paddingHorizontal: layout.isWideCard ? grid(4) : layout.horizontal,
+          paddingTop: insets.top + spacing(1),
+          paddingBottom: insets.bottom + spacing(2),
+          paddingHorizontal: spacing(2),
         }}
       >
-        {landscapeSplit ? (
-          <View style={{ flex: 1, flexDirection: 'row', gap: grid(8), alignItems: 'stretch' }}>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              {logoBlock(landscapeLogoW, false)}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingTop: spacing(2), // ✅ fix
+            paddingBottom: spacing(2),
+          }}
+        >
+          <View
+            className="self-center w-full rounded-2xl border border-border bg-surface"
+            style={{
+              maxWidth: contentWidth,
+              paddingHorizontal: spacing(2.5),
+              paddingVertical: isWide ? spacing(3) : spacing(2.5), // ✅ adaptive
+            }}
+          >
+            {logoBlock()}
+
+            <Text
+              className="text-center font-semibold"
+              style={{
+                fontSize: isWide ? ms(30) : ms(26),
+                color: colors.primary,
+                marginBottom: spacing(1),
+              }}
+            >
+              Welcome
+            </Text>
+
+            <Text
+              className="text-center"
+              style={{
+                fontSize: ms(15),
+                color: colors.textMuted,
+                marginBottom: spacing(3),
+              }}
+            >
+              Sign in with mobile — no password
+            </Text>
+
+            {/* Input */}
+            <Controller
+              control={phoneForm.control}
+              name="mobile"
+              render={({ field: { onChange, onBlur, value }, fieldState }) => (
+                <View style={{ marginBottom: spacing(2) }}>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      marginBottom: spacing(1),
+                      fontSize: ms(14),
+                      fontWeight: '500',
+                    }}
+                  >
+                    Mobile number
+                  </Text>
+
+                  <View
+                    className="flex-row items-center rounded-xl border border-border bg-surface2"
+                    style={{ minHeight: ms(52), paddingHorizontal: spacing(1.5) }}
+                  >
+                    <Text style={{ color: colors.textMuted, marginRight: spacing(1) }}>
+                      +91
+                    </Text>
+
+                    <TextInput
+                      className="flex-1 text-text"
+                      value={formatPhoneDisplay(value)}
+                      onChangeText={(t) => onChange(normalizeIndianMobile(t))}
+                      onBlur={onBlur}
+                      keyboardType="phone-pad"
+                      placeholder="98765 43210"
+                      placeholderTextColor={colors.textMuted}
+                      maxLength={12}
+                      style={{ fontSize: ms(15), paddingVertical: spacing(1.25) }}
+                    />
+                  </View>
+
+                  {fieldState.error?.message && (
+                    <Text
+                      style={{
+                        color: colors.danger,
+                        marginTop: spacing(0.75),
+                        fontSize: ms(13),
+                      }}
+                    >
+                      {fieldState.error.message}
+                    </Text>
+                  )}
+                </View>
+              )}
+            />
+
+            {error && (
+              <Text
+                style={{
+                  marginBottom: spacing(1.5),
+                  color: colors.danger,
+                  fontSize: ms(13),
+                }}
+              >
+                {error}
+              </Text>
+            )}
+
+            {/* ✅ FIX: wrap button */}
+            <View style={{ marginBottom: spacing(2) }}>
+              <Button
+                title="Continue"
+                fullWidth
+                onPress={onContinue}
+                loading={busy}
+                disabled={busy}
+              />
             </View>
-            <View style={{ flex: 1 }}>{scrollBody}</View>
+
+            {/* ✅ FIX: wrap pressable */}
+            <View className="items-center">
+              <Pressable
+                onPress={browse}
+                style={({ pressed }) => ({
+                  paddingVertical: spacing(1),
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <Text style={{ fontSize: ms(15), color: colors.textMuted }}>
+                  Browse without account
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        ) : (
-          scrollBody
-        )}
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );

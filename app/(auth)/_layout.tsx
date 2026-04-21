@@ -1,4 +1,4 @@
-import { authColors } from '@/auth/authTheme';
+import { Colors } from '@/constants/colors';
 import { AuthFlowProvider } from '@/hooks/useAuthFlow';
 import {
   Inter_400Regular,
@@ -28,7 +28,7 @@ export default function AuthLayout() {
   }, [loaded, fontError]);
 
   if (!loaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: authColors.canvas }} />;
+    return <View style={{ flex: 1, backgroundColor: Colors.neutral[50] }} />;
   }
 
   return (
@@ -38,7 +38,7 @@ export default function AuthLayout() {
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
-          contentStyle: { backgroundColor: authColors.canvas },
+          contentStyle: { backgroundColor: Colors.neutral[50] },
         }}
       />
     </AuthFlowProvider>

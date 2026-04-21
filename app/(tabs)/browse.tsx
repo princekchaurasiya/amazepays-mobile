@@ -1,21 +1,33 @@
-import { ProductList } from '@/components/products/ProductList';
 import { EmptyState } from '@/components/common/EmptyState';
-import { useProductList } from '@/hooks/useProducts';
-import { colors, spacing } from '@/theme';
+import { useProductList, useCategories } from '@/hooks/useProducts';
+import { Colors } from '@/constants/colors';
+import { colors, layout } from '@/theme';
 import type { Product } from '@/types/models';
-import { cn } from '@/utils/cn';
+import { formatInr } from '@/utils/format';
+import { getListImageUrl, getProductTitle, isOutOfStock, parsePrice } from '@/utils/product';
 import { Ionicons } from '@expo/vector-icons';
+import type { AxiosError } from 'axios';
+import Constants from 'expo-constants';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
+  ActivityIndicator,
+  FlatList,
   Platform,
   Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ms } from 'react-native-size-matters';
+
+const spacing = (n: number) => ms(n * 8);
 
 function paramToString(q: string | string[] | undefined): string {
   if (q == null) return '';
@@ -29,9 +41,122 @@ function paramToOptionalInt(q: string | string[] | undefined): number | undefine
   return Number.isFinite(n) ? n : undefined;
 }
 
+function categorySubtitle(p: Product): string | null {
+  const cats = p.categories;
+  if (cats?.length) return cats.map((c) => c.name).join(' · ');
+  const d = p.description?.trim();
+  if (d) return d.length > 48 ? `${d.slice(0, 48)}…` : d;
+  return null;
+}
+
+function valueRangeLine(p: Product): string {
+  const values = [
+    parsePrice(p.selling_price),
+    parsePrice(p.mrp),
+    parsePrice(p.denomination),
+  ].filter((n) => n > 0);
+  if (values.length === 0) return '—';
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  if (lo === hi) return formatInr(lo);
+  return `${formatInr(lo)} - ${formatInr(hi)}`;
+}
+
+function brandTitle(p: Product): string {
+  return p.brand?.name || getProductTitle(p);
+}
+
+function accentBlobColor(productId: number): string {
+  const palette = [
+    Colors.brand[50],
+    Colors.accentColors[50],
+    Colors.brand[100],
+    Colors.accentColors[100],
+  ];
+  return palette[Math.abs(productId) % palette.length] ?? Colors.brand[50];
+}
+
+function BrowseGiftCard({
+  product,
+  onPress,
+}: {
+  product: Product;
+  onPress: () => void;
+}) {
+  const img = getListImageUrl(product);
+  const title = brandTitle(product);
+  const sub = categorySubtitle(product);
+  const range = valueRangeLine(product);
+  const oos = isOutOfStock(product);
+  const blob = accentBlobColor(product.id);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          opacity: pressed ? 0.94 : 1,
+          marginBottom: spacing(1.75),
+        },
+      ]}
+    >
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          right: -spacing(2),
+          top: -spacing(2),
+          width: ms(120),
+          height: ms(120),
+          borderRadius: ms(60),
+          backgroundColor: blob,
+          opacity: 0.85,
+        }}
+      />
+      <View style={styles.cardImageRow}>
+        <View style={styles.cardImageShell}>
+          {img ? (
+            <Image source={{ uri: img }} style={styles.cardImage} contentFit="contain" />
+          ) : (
+            <Text style={styles.cardImageFallbackText} numberOfLines={1}>
+              {title.slice(0, 1).toUpperCase()}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        {sub ? (
+          <Text style={styles.cardSubtitle} numberOfLines={2}>
+            {sub}
+          </Text>
+        ) : null}
+        <View style={styles.cardMetaRow}>
+          <View>
+            <Text style={styles.valueRangeLabel}>
+              VALUE RANGE
+            </Text>
+            <Text style={styles.valueRangeValue}>{range}</Text>
+          </View>
+          <View pointerEvents="none" style={styles.cardArrowShell}>
+            <Ionicons name="arrow-forward" size={ms(22)} color={colors.onPrimary} />
+          </View>
+        </View>
+        {oos ? (
+          <Text style={styles.outOfStockText}>Out of stock</Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
 export default function BrowseScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const params = useLocalSearchParams<{
     q?: string | string[];
     category_id?: string | string[];
@@ -41,11 +166,15 @@ export default function BrowseScreen() {
   const categoryIdParam = paramToOptionalInt(params.category_id);
   const brandIdParam = paramToOptionalInt(params.brand_id);
 
+  const appName = Constants.expoConfig?.name ?? 'AmazePays';
+
   const [search, setSearch] = useState(qParam);
   const [debouncedSearch, setDebouncedSearch] = useState(qParam.trim());
   const inputRef = useRef<TextInput | null>(null);
+  const listRef = useRef<FlatList<Product>>(null);
 
-  const focusAnim = useRef(new Animated.Value(0)).current;
+  const { data: categoriesRes } = useCategories();
+  const categories = categoriesRes ?? [];
 
   useEffect(() => {
     const next = paramToString(params.q);
@@ -75,23 +204,28 @@ export default function BrowseScreen() {
     [query.data?.pages]
   );
 
-  const onProductPress = (p: Product) => router.push(`/product/${p.id}`);
+  const onProductPress = useCallback((p: Product) => router.push(`/product/${p.id}`), [router]);
 
   const isSearching = debouncedSearch.length > 0;
   const isLoadingFirstPage = query.isFetching && !query.isFetchingNextPage && products.length === 0;
 
-  const borderColor = focusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.border, colors.primary],
-  });
-  const lift = focusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -1],
-  });
-  const scale = focusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.01],
-  });
+  const horizontalPad = spacing(2);
+  const shellMaxWidth = layout.contentMaxWidth + horizontalPad * 2;
+  const listInnerWidth = Math.min(windowWidth, shellMaxWidth) - horizontalPad * 2;
+  const numColumns = listInnerWidth >= 480 ? 2 : 1;
+  const columnGap = spacing(1.5);
+
+  const setBrowseParams = useCallback(
+    (next: { q?: string; category_id?: number }) => {
+      const p: Record<string, string> = {};
+      const q = (next.q ?? debouncedSearch).trim();
+      if (q) p.q = q;
+      if (next.category_id != null) p.category_id = String(next.category_id);
+      if (brandIdParam != null) p.brand_id = String(brandIdParam);
+      router.replace({ pathname: '/(tabs)/browse', params: p });
+    },
+    [brandIdParam, debouncedSearch, router]
+  );
 
   const clearSearch = () => {
     setSearch('');
@@ -99,160 +233,473 @@ export default function BrowseScreen() {
     inputRef.current?.focus();
   };
 
-  const resultsHeader = (
-    <View className="px-4 pb-1 pt-2">
-      {isSearching ? (
-        <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-text-muted">
-            Results for{' '}
-            <Text className="font-bold text-text">
-              “{debouncedSearch.length > 28 ? `${debouncedSearch.slice(0, 28)}…` : debouncedSearch}”
-            </Text>
-          </Text>
-          <View className="flex-row items-center gap-2">
-            <View className="rounded-full border border-border bg-surface px-2.5 py-1">
-              <Text className="text-xs font-bold text-text">{products.length}</Text>
-            </View>
-          </View>
-        </View>
-      ) : (
-        <Text className="text-sm text-text-muted">Browse all gift cards</Text>
-      )}
+  const catalogErrorDescription = useMemo(() => {
+    if (!query.isError || !query.error) return '';
+    const e = query.error as AxiosError<{ message?: string }>;
+    return (
+      (e.response?.data as { message?: string } | undefined)?.message ||
+      e.message ||
+      'Request failed.'
+    );
+  }, [query.isError, query.error]);
 
+  const listHeader = (
+    <View style={styles.fullWidth}>
       {(categoryIdParam != null || brandIdParam != null) && (
-        <View className="mt-2 flex-row flex-wrap gap-2">
+        <View style={styles.filterChipRow}>
           {categoryIdParam != null ? (
-            <View className="rounded-full bg-surface2 px-3 py-1.5">
-              <Text className="text-xs font-semibold text-text-muted">Category #{categoryIdParam}</Text>
+            <View style={styles.filterChip}>
+              <Text style={styles.filterChipText}>Category filter active</Text>
             </View>
           ) : null}
           {brandIdParam != null ? (
-            <View className="rounded-full bg-surface2 px-3 py-1.5">
-              <Text className="text-xs font-semibold text-text-muted">Brand #{brandIdParam}</Text>
+            <View style={styles.filterChip}>
+              <Text style={styles.filterChipText}>Brand #{brandIdParam}</Text>
             </View>
           ) : null}
         </View>
       )}
+
+      <View style={styles.popularRow}>
+        <Text style={styles.popularTitle}>Popular Brands</Text>
+        <Pressable
+          onPress={() => {
+            if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
+            else listRef.current?.scrollToEnd({ animated: true });
+          }}
+          hitSlop={ms(8)}
+        >
+          <Text style={styles.viewAllText}>View all</Text>
+        </Pressable>
+      </View>
+
+      {isSearching ? (
+        <View style={styles.searchResultsRow}>
+          <Text style={styles.searchResultText}>
+            Results for{' '}
+            <Text style={styles.searchResultQueryText}>
+              “{debouncedSearch.length > 32 ? `${debouncedSearch.slice(0, 32)}…` : debouncedSearch}”
+            </Text>
+            <Text style={styles.searchResultCountText}> · {products.length}</Text>
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 
   return (
-    <View
-      className={cn('flex-1 bg-background')}
-      style={{ paddingTop: Platform.OS === 'android' ? spacing(1) : insets.top + spacing(1) }}
-    >
-      <View className="px-4 pb-2">
-        <Animated.View
-          style={[
-            {
-              transform: [{ translateY: lift }, { scale }],
-              borderColor,
-              borderWidth: 1,
-              borderRadius: 16,
-              backgroundColor: colors.surface,
-              paddingHorizontal: spacing(1.25),
-              paddingVertical: spacing(0.75),
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing(1),
-              ...Platform.select({
-                ios: {
-                  shadowColor: colors.primary,
-                  shadowOpacity: 0.08,
-                  shadowRadius: 14,
-                  shadowOffset: { width: 0, height: 10 },
-                },
-                android: { elevation: 3 },
-                default: {},
-              }),
-            },
-          ]}
+    <View style={styles.screenRoot}>
+      <View style={[styles.topHeaderWrap, { width: '100%', maxWidth: shellMaxWidth }]}>
+        <View
+          style={{
+            ...styles.headerTopRow,
+            paddingTop: Platform.OS === 'android' ? spacing(0.5) : 0,
+            paddingHorizontal: horizontalPad,
+          }}
         >
-          <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-          <TextInput
-            ref={(r) => {
-              inputRef.current = r;
-            }}
-            placeholder="Search gift cards…"
-            placeholderTextColor={colors.textMuted}
-            value={search}
-            onChangeText={(t) => {
-              setSearch(t);
-              debounce(t);
-            }}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            onFocus={() => {
-              Animated.timing(focusAnim, {
-                toValue: 1,
-                duration: 160,
-                useNativeDriver: false,
-              }).start();
-            }}
-            onBlur={() => {
-              Animated.timing(focusAnim, {
-                toValue: 0,
-                duration: 180,
-                useNativeDriver: false,
-              }).start();
-            }}
-            onSubmitEditing={() => setDebouncedSearch(search.trim())}
-            style={{
-              flex: 1,
-              minHeight: 40,
-              color: colors.text,
-              fontSize: 16,
-              fontWeight: '600',
-            }}
-          />
+          <View style={styles.brandRow}>
+            <View style={styles.logoShell}>
+              <Image source={require('../../assets/logo.png')} style={styles.logoImage} contentFit="contain" />
+            </View>
+            <Text style={styles.appNameText} numberOfLines={1}>
+              {appName}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityLabel="Notifications"
+            hitSlop={ms(12)}
+            onPress={() => {}}
+            style={({ pressed }) => [styles.notificationsButton, { opacity: pressed ? 0.65 : 1 }]}
+          >
+            <Ionicons name="notifications-outline" size={ms(24)} color={colors.primary} />
+          </Pressable>
+        </View>
 
-          {search.trim().length > 0 ? (
+        <Text style={[styles.screenTitle, { paddingHorizontal: horizontalPad }]}>
+          Browse Gift Cards
+        </Text>
+
+        <View style={[styles.stickyFilterWrap, { paddingHorizontal: horizontalPad }]}>
+          <View
+            style={{
+              ...styles.searchContainer,
+              paddingVertical: Platform.OS === 'ios' ? spacing(1) : spacing(0.75),
+            }}
+          >
+            <Ionicons name="search-outline" size={ms(20)} color={colors.textMuted} />
+            <TextInput
+              ref={(r) => {
+                inputRef.current = r;
+              }}
+              placeholder="Search for brands, retailers or food.."
+              placeholderTextColor={colors.textMuted}
+              value={search}
+              onChangeText={(t) => {
+                setSearch(t);
+                debounce(t);
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              onSubmitEditing={() => setDebouncedSearch(search.trim())}
+              style={styles.searchInput}
+            />
+            {search.trim().length > 0 ? (
+              <Pressable accessibilityLabel="Clear search" onPress={clearSearch} hitSlop={ms(12)}>
+                <Ionicons name="close-circle" size={ms(20)} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+          </View>
+
+          <Text style={styles.categoriesTitle}>
+            Categories
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: spacing(1.5), gap: spacing(1), paddingRight: spacing(1) }}
+          >
             <Pressable
-              accessibilityLabel="Clear search"
-              onPress={clearSearch}
-              hitSlop={12}
-              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+              onPress={() => setBrowseParams({ category_id: undefined })}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing(1),
+                paddingHorizontal: spacing(1.75),
+                paddingVertical: spacing(1),
+                borderRadius: ms(999),
+                backgroundColor: categoryIdParam == null ? colors.primary : colors.surface2,
+                borderWidth: categoryIdParam == null ? 0 : ms(1),
+                borderColor: colors.border,
+                opacity: pressed ? 0.9 : 1,
+              })}
             >
-              <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+              <Ionicons
+                name="grid-outline"
+                size={ms(18)}
+                color={categoryIdParam == null ? colors.onPrimary : colors.primary}
+              />
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  { color: categoryIdParam == null ? colors.onPrimary : colors.text },
+                ]}
+              >
+                All
+              </Text>
             </Pressable>
-          ) : null}
-        </Animated.View>
+            {categories.slice(0, 12).map((c) => {
+              const active = categoryIdParam === c.id;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => setBrowseParams({ category_id: c.id })}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing(1),
+                    paddingHorizontal: spacing(1.75),
+                    paddingVertical: spacing(1),
+                    borderRadius: ms(999),
+                    backgroundColor: active ? colors.primary : colors.surface2,
+                    borderWidth: active ? 0 : ms(1),
+                    borderColor: colors.border,
+                    opacity: pressed ? 0.9 : 1,
+                  })}
+                >
+                  <Ionicons
+                    name="pricetags-outline"
+                    size={ms(18)}
+                    color={active ? colors.onPrimary : colors.primary}
+                  />
+                  <Text style={[styles.categoryChipText, { color: active ? colors.onPrimary : colors.text }]} numberOfLines={1}>
+                    {c.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
       </View>
-      <ProductList
-        variant="rows"
-        products={products}
-        onProductPress={onProductPress}
-        onRefresh={() => query.refetch()}
-        refreshing={query.isFetching && !query.isFetchingNextPage}
-        ListHeaderComponent={resultsHeader}
+
+      <FlatList<Product>
+        ref={listRef}
+        key={numColumns}
+        style={{ width: '100%', maxWidth: shellMaxWidth }}
+        data={products}
+        numColumns={numColumns}
+        keyExtractor={(item) => String(item.id)}
+        ListHeaderComponent={listHeader}
+        columnWrapperStyle={numColumns > 1 ? { gap: columnGap } : undefined}
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPad,
+          paddingBottom: spacing(3),
+          flexGrow: 1,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={!!(query.isFetching && !query.isFetchingNextPage && products.length > 0)}
+            onRefresh={() => void query.refetch()}
+            progressViewOffset={Platform.OS === 'android' ? 48 : 0}
+            tintColor={colors.primary}
+          />
+        }
+        renderItem={({ item }) => (
+          <View style={numColumns > 1 ? { flex: 1, minWidth: 0 } : undefined}>
+            <BrowseGiftCard product={item} onPress={() => onProductPress(item)} />
+          </View>
+        )}
         ListEmptyComponent={
           query.isError ? (
-            <EmptyState
-              title="Couldn't load results"
-              description="Pull to refresh or try again."
-              actionLabel="Retry"
-              onAction={() => void query.refetch()}
-            />
+            <View>
+              <EmptyState
+                title="Couldn't load results"
+                description={catalogErrorDescription || 'Pull to refresh or try again.'}
+                actionLabel="Retry"
+                onAction={() => void query.refetch()}
+              />
+            </View>
           ) : isLoadingFirstPage ? (
-            <EmptyState title={isSearching ? 'Searching…' : 'Loading…'} description="Just a moment." />
+            <View>
+              <EmptyState title={isSearching ? 'Searching…' : 'Loading…'} description="Just a moment." />
+            </View>
           ) : isSearching ? (
-            <EmptyState
-              title="No matches"
-              description="Try a different keyword (brand name works best)."
-            />
+            <View>
+              <EmptyState
+                title="No matches"
+                description="Try a different keyword (brand name works best)."
+              />
+            </View>
           ) : (
-            <EmptyState title="No products" description="Pull to refresh or try again later." />
+            <View>
+              <EmptyState title="No products" description="Pull to refresh or try again later." />
+            </View>
           )
         }
         onEndReached={() => {
           if (query.hasNextPage && !query.isFetchingNextPage) {
-            query.fetchNextPage();
+            void query.fetchNextPage();
           }
         }}
-        loadingMore={query.isFetchingNextPage}
-        contentContainerStyle={{ paddingBottom: spacing(2) }}
+        onEndReachedThreshold={0.35}
+        ListFooterComponent={
+          query.isFetchingNextPage ? (
+            <View style={styles.footerLoaderWrap}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : null
+        }
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  topHeaderWrap: {
+    backgroundColor: colors.background,
+    zIndex: 10,
+    elevation: 2,
+  },
+  stickyFilterWrap: {
+    backgroundColor: colors.background,
+  },
+  fullWidth: { width: '100%' },
+  card: {
+    flex: 1,
+    overflow: 'hidden',
+    borderRadius: ms(18),
+    borderWidth: ms(1),
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: spacing(2),
+  },
+  cardImageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  cardImageShell: {
+    width: ms(52),
+    height: ms(52),
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderRadius: ms(14),
+    backgroundColor: colors.surface2,
+  },
+  cardImage: { width: ms(44), height: ms(44) },
+  cardImageFallbackText: {
+    fontSize: ms(20),
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  cardBody: {
+    marginTop: spacing(1.5),
+    paddingRight: spacing(0.25),
+  },
+  cardTitle: {
+    fontSize: ms(20),
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  cardSubtitle: {
+    marginTop: spacing(0.5),
+    fontSize: ms(14),
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+  cardMetaRow: {
+    marginTop: spacing(1.25),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  valueRangeLabel: {
+    fontSize: ms(10),
+    fontWeight: '700',
+    letterSpacing: ms(0.6),
+    color: colors.textMuted,
+    opacity: 0.75,
+  },
+  valueRangeValue: {
+    marginTop: spacing(0.25),
+    fontSize: ms(16),
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  cardArrowShell: {
+    width: ms(48),
+    height: ms(48),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: ms(14),
+    backgroundColor: colors.accent,
+  },
+  outOfStockText: {
+    marginTop: spacing(1),
+    fontSize: ms(12),
+    fontWeight: '700',
+    color: colors.danger,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing(1.5),
+  },
+  brandRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.25),
+  },
+  logoShell: {
+    width: ms(44),
+    height: ms(44),
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderRadius: ms(999),
+  },
+  logoImage: { width: ms(30), height: ms(30) },
+  appNameText: {
+    flex: 1,
+    fontSize: ms(18),
+    fontWeight: '800',
+    letterSpacing: ms(-0.2),
+    color: colors.primary,
+  },
+  notificationsButton: { padding: spacing(0.5) },
+  screenTitle: {
+    marginTop: spacing(0.5),
+    fontSize: ms(30),
+    fontWeight: '800',
+    letterSpacing: ms(-0.5),
+    color: colors.primary,
+  },
+  searchContainer: {
+    marginTop: spacing(2),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1),
+    borderRadius: ms(999),
+    borderWidth: ms(1),
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
+    paddingHorizontal: spacing(1.75),
+  },
+  searchInput: {
+    minHeight: ms(40),
+    flex: 1,
+    fontSize: ms(14),
+    fontWeight: '400',
+    color: colors.text,
+  },
+  categoriesTitle: {
+    marginTop: spacing(2.5),
+    fontSize: ms(16),
+    fontWeight: '400',
+    color: colors.primary,
+  },
+  categoryChipText: {
+    fontSize: ms(12),
+    fontWeight: '400',
+  },
+  filterChipRow: {
+    marginBottom: spacing(1),
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing(1),
+  },
+  filterChip: {
+    borderRadius: ms(999),
+    backgroundColor: colors.surface2,
+    paddingHorizontal: spacing(1.5),
+    paddingVertical: spacing(0.75),
+  },
+  filterChipText: {
+    fontSize: ms(12),
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  popularRow: {
+    marginTop: spacing(0.5),
+    marginBottom: spacing(1),
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  popularTitle: {
+    fontSize: ms(16),
+    fontWeight: '400',
+    color: colors.primary,
+  },
+  viewAllText: {
+    fontSize: ms(14),
+    fontWeight: '400',
+    color: colors.primaryBright,
+  },
+  searchResultsRow: { marginBottom: spacing(1) },
+  searchResultText: {
+    fontSize: ms(14),
+    color: colors.textMuted,
+  },
+  searchResultQueryText: {
+    fontSize: ms(14),
+    fontWeight: '800',
+    color: colors.text,
+  },
+  searchResultCountText: {
+    fontSize: ms(14),
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  footerLoaderWrap: {
+    paddingVertical: spacing(2),
+  },
+});

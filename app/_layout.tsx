@@ -65,7 +65,7 @@ function BrandSplash() {
       </View>
       <Text style={{ fontSize: 34, fontWeight: '800', letterSpacing: 0.5 }}>
         <Text style={{ color: Colors.brand[600] }}>AMAZE</Text>
-        <Text style={{ color: Colors.accent[500] }}>PAYS</Text>
+        <Text style={{ color: Colors.accentColors[500] }}>PAYS</Text>
       </Text>
     </View>
   );

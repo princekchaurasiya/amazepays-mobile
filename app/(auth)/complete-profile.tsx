@@ -1,17 +1,18 @@
 import { authApi } from '@/api/auth';
-import { authColors, authFonts, grid, useAuthLayout } from '@/auth/authTheme';
-import { AuthButton } from '@/components/auth/AuthButton';
-import { AuthInput } from '@/components/auth/AuthInput';
+import { Button } from '@/components/ui/Button';
+import { Colors } from '@/constants/colors';
 import { persistSession } from '@/hooks/useAuth';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 import { captureException } from '@/sentry';
+import { colors, spacing } from '@/theme';
+import { ms } from '@/utils/scaling';
 import { newUserProfileSchema } from '@/utils/validation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as Haptics from 'expo-haptics';
 import { Redirect, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 
@@ -20,7 +21,7 @@ type ProfileForm = z.infer<typeof newUserProfileSchema>;
 export default function CompleteProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const layout = useAuthLayout();
+  const { width } = useWindowDimensions();
   const { profileTempToken, clearPostOtpState } = useAuthFlow();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -33,6 +34,9 @@ export default function CompleteProfileScreen() {
   if (!profileTempToken) {
     return <Redirect href="/(auth)/welcome" />;
   }
+
+  const isWide = width >= 768;
+  const contentWidth = Math.min(width - spacing(6), ms(560));
 
   const onSubmit = profileForm.handleSubmit(async (values) => {
     setError(null);
@@ -64,84 +68,130 @@ export default function CompleteProfileScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: authColors.canvas }}
+      className="flex-1"
+      style={{ backgroundColor: Colors.neutral[50] }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View
+        className="flex-1"
         style={{
-          flex: 1,
-          paddingTop: insets.top + grid(4),
-          paddingBottom: insets.bottom + grid(4),
-          paddingHorizontal: layout.horizontal,
-          maxWidth: layout.isWideCard ? layout.maxContentWidth : undefined,
-          alignSelf: layout.isWideCard ? 'center' : 'stretch',
-          width: layout.isWideCard ? '100%' : undefined,
+          paddingTop: insets.top + spacing(1),
+          paddingBottom: insets.bottom + spacing(2),
+          paddingHorizontal: spacing(2),
         }}
       >
-        <Text
-          style={{
-            fontFamily: authFonts.display,
-            fontSize: 28,
-            letterSpacing: -0.4,
-            color: authColors.text,
-            marginBottom: grid(2),
-          }}
-        >
-          Almost there
-        </Text>
-        <Text style={{ fontFamily: authFonts.body, fontSize: 15, color: authColors.textMuted, marginBottom: grid(5) }}>
-          Add your name. Email and referral are optional.
-        </Text>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View
+            className="self-center w-full rounded-2xl border border-border bg-surface"
+            style={{
+              maxWidth: contentWidth,
+              paddingHorizontal: spacing(2.5),
+              paddingVertical: spacing(3),
+            }}
+          >
+            <Text
+              className="text-center font-semibold"
+              style={{
+                fontSize: isWide ? ms(30) : ms(26),
+                color: colors.primary,
+                marginBottom: spacing(1),
+              }}
+            >
+              Almost there
+            </Text>
+            <Text
+              className="text-center"
+              style={{ fontSize: ms(15), color: colors.textMuted, marginBottom: spacing(3) }}
+            >
+              Add your name. Email and referral are optional.
+            </Text>
 
-        <Controller
-          control={profileForm.control}
-          name="name"
-          render={({ field: { onChange, onBlur, value }, fieldState }) => (
-            <AuthInput
-              label="Full name"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              autoCapitalize="words"
-              error={fieldState.error?.message}
+            <Controller
+              control={profileForm.control}
+              name="name"
+              render={({ field: { onChange, onBlur, value }, fieldState }) => (
+                <View style={{ marginBottom: spacing(2) }}>
+                  <Text className="font-medium" style={{ color: colors.text, marginBottom: spacing(1), fontSize: ms(14) }}>
+                    Full name
+                  </Text>
+                  <TextInput
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    autoCapitalize="words"
+                    editable={!busy}
+                    className="rounded-xl border border-border bg-surface2 text-text"
+                    style={{ minHeight: ms(52), paddingHorizontal: spacing(1.5), fontSize: ms(15) }}
+                  />
+                  {fieldState.error?.message ? (
+                    <Text style={{ color: colors.danger, marginTop: spacing(0.75), fontSize: ms(13) }}>
+                      {fieldState.error.message}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
             />
-          )}
-        />
-        <Controller
-          control={profileForm.control}
-          name="email"
-          render={({ field: { onChange, onBlur, value }, fieldState }) => (
-            <AuthInput
-              label="Email (optional)"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          control={profileForm.control}
-          name="referral_code"
-          render={({ field: { onChange, onBlur, value }, fieldState }) => (
-            <AuthInput
-              label="Referral code (optional)"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              autoCapitalize="characters"
-              error={fieldState.error?.message}
-            />
-          )}
-        />
 
-        {error ? (
-          <Text style={{ marginBottom: grid(2), color: authColors.error, fontFamily: authFonts.body }}>{error}</Text>
-        ) : null}
+            <Controller
+              control={profileForm.control}
+              name="email"
+              render={({ field: { onChange, onBlur, value }, fieldState }) => (
+                <View style={{ marginBottom: spacing(2) }}>
+                  <Text className="font-medium" style={{ color: colors.text, marginBottom: spacing(1), fontSize: ms(14) }}>
+                    Email (optional)
+                  </Text>
+                  <TextInput
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    editable={!busy}
+                    className="rounded-xl border border-border bg-surface2 text-text"
+                    style={{ minHeight: ms(52), paddingHorizontal: spacing(1.5), fontSize: ms(15) }}
+                  />
+                  {fieldState.error?.message ? (
+                    <Text style={{ color: colors.danger, marginTop: spacing(0.75), fontSize: ms(13) }}>
+                      {fieldState.error.message}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
+            />
 
-        <AuthButton title="Complete sign-up" fullWidth onPress={onSubmit} loading={busy} disabled={busy} />
+            <Controller
+              control={profileForm.control}
+              name="referral_code"
+              render={({ field: { onChange, onBlur, value }, fieldState }) => (
+                <View style={{ marginBottom: spacing(2) }}>
+                  <Text className="font-medium" style={{ color: colors.text, marginBottom: spacing(1), fontSize: ms(14) }}>
+                    Referral code (optional)
+                  </Text>
+                  <TextInput
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    autoCapitalize="characters"
+                    editable={!busy}
+                    className="rounded-xl border border-border bg-surface2 text-text"
+                    style={{ minHeight: ms(52), paddingHorizontal: spacing(1.5), fontSize: ms(15) }}
+                  />
+                  {fieldState.error?.message ? (
+                    <Text style={{ color: colors.danger, marginTop: spacing(0.75), fontSize: ms(13) }}>
+                      {fieldState.error.message}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
+            />
+
+            {error ? (
+              <Text style={{ marginBottom: spacing(1.5), color: colors.danger, fontSize: ms(13) }}>{error}</Text>
+            ) : null}
+
+            <Button title="Complete sign-up" fullWidth onPress={onSubmit} loading={busy} disabled={busy} />
+          </View>
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );

@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Platform, Text, View, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
+import { ms } from '@/utils/scaling';
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -16,21 +17,21 @@ export default function OnboardingScreen() {
     <View
       className="flex-1"
       style={{
-        paddingTop: Platform.OS === 'ios' ? insets.top : spacing(2),
+        paddingTop: insets.top + spacing(1), // ✅ improved
         paddingBottom: insets.bottom + spacing(2),
         backgroundColor: Colors.neutral[50],
       }}
     >
-      {/* Full-screen decorative background (keeps onboarding away from card feel) */}
+      {/* Decorative background */}
       <View
         pointerEvents="none"
         style={{
           position: 'absolute',
-          top: -spacing(10),
-          right: -spacing(8),
-          width: spacing(30),
-          height: spacing(30),
-          borderRadius: spacing(15),
+          top: -ms(120),
+          right: -ms(100),
+          width: ms(240),
+          height: ms(240),
+          borderRadius: ms(120),
           backgroundColor: colors.accent,
           opacity: 0.1,
         }}
@@ -39,11 +40,11 @@ export default function OnboardingScreen() {
         pointerEvents="none"
         style={{
           position: 'absolute',
-          bottom: -spacing(12),
-          left: -spacing(10),
-          width: spacing(34),
-          height: spacing(34),
-          borderRadius: spacing(17),
+          bottom: -ms(140),
+          left: -ms(120),
+          width: ms(280),
+          height: ms(280),
+          borderRadius: ms(140),
           backgroundColor: Colors.brand[500],
           opacity: 0.08,
         }}
@@ -54,48 +55,53 @@ export default function OnboardingScreen() {
         className="flex-1 justify-center"
         style={{ paddingHorizontal: spacing(3), paddingTop: spacing(3) }}
       >
-        <Animated.View 
+        <Animated.View
           entering={FadeInUp.duration(800).delay(200)}
           className="items-center"
         >
-          {/* Brand logo above welcome text */}
+          {/* Logo */}
           <View
             style={[
               {
                 marginBottom: spacing(3),
-                width: spacing(14),
-                height: spacing(14),
-                borderRadius: spacing(7),
-                backgroundColor: Colors.neutral[0],
+                width: ms(140),
+                height: ms(140),
+                borderRadius: ms(20),
+                backgroundColor: colors.neutral[0],
                 borderWidth: 1,
-                borderColor: Colors.neutral[200],
+                borderColor: colors.neutral[200],
                 alignItems: 'center',
                 justifyContent: 'center',
               },
               Platform.select({
                 ios: {
-                  shadowColor: colors.accent,
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.22,
-                  shadowRadius: 14,
+                  shadowColor: '#000', // ✅ fixed
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 12,
                 },
-                android: { elevation: 6 },
+                android: {
+                  elevation: 6,
+                },
               }),
             ]}
           >
             <Image
               source={require('../../assets/logo.png')}
-              className="h-14 w-32"
+              style={{
+                width: ms(90),
+                height: ms(80),
+              }}
               resizeMode="contain"
-              
             />
           </View>
 
-          {/* Welcome heading with brand palette */}
+          {/* Heading */}
           <Animated.Text
             entering={FadeIn.delay(320).duration(500)}
-            className="text-xl font-semibold text-center"
+            className="font-semibold text-center"
             style={{
+              fontSize: ms(24),
               color: Colors.brand[600],
               marginBottom: spacing(1),
             }}
@@ -113,32 +119,27 @@ export default function OnboardingScreen() {
             <Text style={{ color: Colors.brand[700] }}>Simple.</Text>
           </Animated.Text>
 
-          {/* Tagline with brand colors */}
-          <Animated.Text 
+          {/* Tagline */}
+          <Animated.Text
             entering={FadeIn.delay(600).duration(600)}
             className="text-lg text-center leading-7"
-            style={{ color: Colors.brand[700], marginBottom: spacing(1.75) }}
+            style={{
+              color: Colors.brand[700],
+              marginBottom: spacing(1.75),
+            }}
           >
             Buy digital gift cards{' '}
-            <Text style={{ color: colors.accent, fontWeight: '700' }}>instantly</Text>
-          </Animated.Text>
-
-          <Animated.Text 
-            entering={FadeIn.delay(800).duration(600)}
-            className="text-base text-center leading-6"
-            style={{ paddingHorizontal: spacing(2) }}
-          >
-            <Text style={{ color: Colors.neutral[600] }}>
-              Manage your wallet, track orders, and send gifts - all in one place.
+            <Text style={{ color: colors.accent, fontWeight: '700' }}>
+              instantly
             </Text>
           </Animated.Text>
         </Animated.View>
 
-        {/* Feature highlights */}
-        <Animated.View 
+        {/* Features */}
+        <Animated.View
           entering={FadeInUp.delay(1000).duration(600)}
           className="w-full"
-          style={{ marginTop: spacing(4), rowGap: spacing(1) }}
+          style={{ marginTop: spacing(4) }}
         >
           <View className="flex-row items-center justify-center">
             <View
@@ -147,57 +148,70 @@ export default function OnboardingScreen() {
             />
             <Text
               className="text-sm font-medium"
-              style={{ color: Colors.brand[700], marginLeft: spacing(1) }}
+              style={{
+                color: Colors.brand[700],
+                marginLeft: spacing(1),
+              }}
             >
               Fast & Secure
             </Text>
+
             <View
               className="w-1 h-1 rounded-full"
-              style={{ backgroundColor: Colors.neutral[400], marginHorizontal: spacing(2) }}
+              style={{
+                backgroundColor: colors.neutral[400],
+                marginHorizontal: spacing(2),
+              }}
             />
+
             <View
               className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: Colors.brand[200] }}
+              style={{ backgroundColor: colors.brand[200] }}
             />
             <Text
               className="text-sm font-medium"
-              style={{ color: Colors.brand[700], marginLeft: spacing(1) }}
+              style={{
+                color: Colors.brand[700],
+                marginLeft: spacing(1),
+              }}
             >
-              B2C & B2B
+              B2C
             </Text>
           </View>
         </Animated.View>
       </View>
 
       {/* Buttons */}
-      <Animated.View 
+      <Animated.View
         entering={FadeInUp.delay(1200).duration(600)}
         style={{
           paddingHorizontal: spacing(3),
           paddingTop: spacing(2.5),
-          rowGap: spacing(2.25),
         }}
       >
-        <Button
-          title="Get Started"
-          fullWidth
-          style={{
-            minHeight: spacing(7.5),
-            backgroundColor: Colors.brand[600],
-            borderRadius: spacing(1.75),
-          }}
-          onPress={() => {
-            complete(true);
-            router.replace('/(auth)/welcome');
-          }}
-        />
-        
+      <View style={{ marginBottom: spacing(2) }}>
+    <Button
+      title="Get Started"
+      fullWidth
+      style={{
+        minHeight: ms(52),
+        paddingVertical: spacing(1.5),
+        backgroundColor: colors.brand[600],
+        borderRadius: spacing(1.75),
+      }}
+      onPress={() => {
+        complete(true);
+        router.replace('/(auth)/welcome');
+      }}
+    />
+  </View>
         <Button
           title="I already have an account"
           variant="outline"
           fullWidth
           style={{
-            minHeight: spacing(7.5),
+            minHeight: ms(52),
+            paddingVertical: spacing(1.5),
             borderColor: Colors.brand[500],
             borderRadius: spacing(1.75),
           }}

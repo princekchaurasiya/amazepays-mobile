@@ -12,7 +12,7 @@ export const Colors = {
     900: '#0b1226',
     950: '#080d1c',
   },
-  accent: {
+  accentColors: {
     50: '#fff5eb',
     100: '#fee4cc',
     200: '#fecd99',

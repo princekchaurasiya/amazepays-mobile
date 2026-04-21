@@ -1,19 +1,20 @@
 import { authApi } from '@/api/auth';
-import { authColors, authFonts, grid, useAuthLayout } from '@/auth/authTheme';
-import { AuthButton } from '@/components/auth/AuthButton';
-import { AuthInput } from '@/components/auth/AuthInput';
+import { Button } from '@/components/ui/Button';
+import { Colors } from '@/constants/colors';
 import { persistSession } from '@/hooks/useAuth';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
+import { colors, spacing } from '@/theme';
+import { ms } from '@/utils/scaling';
 import * as Haptics from 'expo-haptics';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TwoFactorScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const layout = useAuthLayout();
+  const { width } = useWindowDimensions();
   const { twoFaTempToken, clearPostOtpState } = useAuthFlow();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +23,9 @@ export default function TwoFactorScreen() {
   if (!twoFaTempToken) {
     return <Redirect href="/(auth)/welcome" />;
   }
+
+  const isWide = width >= 768;
+  const contentWidth = Math.min(width - spacing(6), ms(560));
 
   const onVerify = async () => {
     if (!code.trim()) {
@@ -46,48 +50,66 @@ export default function TwoFactorScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: authColors.canvas }}
+      className="flex-1"
+      style={{ backgroundColor: Colors.neutral[50] }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View
+        className="flex-1"
         style={{
-          flex: 1,
-          paddingTop: insets.top + grid(4),
-          paddingBottom: insets.bottom + grid(4),
-          paddingHorizontal: layout.horizontal,
-          maxWidth: layout.isWideCard ? layout.maxContentWidth : undefined,
-          alignSelf: layout.isWideCard ? 'center' : 'stretch',
-          width: layout.isWideCard ? '100%' : undefined,
+          paddingTop: insets.top + spacing(1),
+          paddingBottom: insets.bottom + spacing(2),
+          paddingHorizontal: spacing(2),
         }}
       >
-        <Text
-          style={{
-            fontFamily: authFonts.display,
-            fontSize: 28,
-            letterSpacing: -0.4,
-            color: authColors.text,
-            marginBottom: grid(2),
-          }}
-        >
-          Two-factor auth
-        </Text>
-        <Text style={{ fontFamily: authFonts.body, fontSize: 15, color: authColors.textMuted, marginBottom: grid(5) }}>
-          Enter the code from your authenticator app.
-        </Text>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View
+            className="self-center w-full rounded-2xl border border-border bg-surface"
+            style={{
+              maxWidth: contentWidth,
+              paddingHorizontal: spacing(2.5),
+              paddingVertical: spacing(3),
+            }}
+          >
+            <Text
+              className="text-center font-semibold"
+              style={{
+                fontSize: isWide ? ms(30) : ms(26),
+                color: colors.primary,
+                marginBottom: spacing(1),
+              }}
+            >
+              Two-factor auth
+            </Text>
+            <Text
+              className="text-center"
+              style={{ fontSize: ms(15), color: colors.textMuted, marginBottom: spacing(3) }}
+            >
+              Enter the code from your authenticator app.
+            </Text>
 
-        <AuthInput
-          label="Authenticator code"
-          value={code}
-          onChangeText={setCode}
-          keyboardType="number-pad"
-          autoComplete="off"
-        />
+            <View style={{ marginBottom: spacing(2) }}>
+              <Text className="font-medium" style={{ color: colors.text, marginBottom: spacing(1), fontSize: ms(14) }}>
+                Authenticator code
+              </Text>
+              <TextInput
+                value={code}
+                onChangeText={setCode}
+                keyboardType="number-pad"
+                autoComplete="off"
+                editable={!busy}
+                className="rounded-xl border border-border bg-surface2 text-text"
+                style={{ minHeight: ms(52), paddingHorizontal: spacing(1.5), fontSize: ms(15) }}
+              />
+            </View>
 
-        {error ? (
-          <Text style={{ marginBottom: grid(2), color: authColors.error, fontFamily: authFonts.body }}>{error}</Text>
-        ) : null}
+            {error ? (
+              <Text style={{ marginBottom: spacing(1.5), color: colors.danger, fontSize: ms(13) }}>{error}</Text>
+            ) : null}
 
-        <AuthButton title="Verify" fullWidth onPress={onVerify} loading={busy} disabled={busy} />
+            <Button title="Verify" fullWidth onPress={onVerify} loading={busy} disabled={busy} />
+          </View>
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );

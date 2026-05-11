@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/common/EmptyState';
+import { TopAppBar } from '@/components/common/TopAppBar';
 import { useProductList, useCategories } from '@/hooks/useProducts';
 import { Colors } from '@/constants/colors';
 import { colors, layout } from '@/theme';
@@ -7,7 +8,6 @@ import { formatInr } from '@/utils/format';
 import { getListImageUrl, getProductTitle, isOutOfStock, parsePrice } from '@/utils/product';
 import { Ionicons } from '@expo/vector-icons';
 import type { AxiosError } from 'axios';
-import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,7 +24,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ms } from 'react-native-size-matters';
 
 const spacing = (n: number) => ms(n * 8);
@@ -83,6 +82,19 @@ function BrowseGiftCard({
   product: Product;
   onPress: () => void;
 }) {
+  const productImages =
+    product.images && typeof product.images === 'object'
+      ? (product.images as Record<string, unknown>)
+      : null;
+  const cardBackgroundUrl =
+    typeof productImages?.large === 'string' && productImages.large.trim().length > 0
+      ? productImages.large
+      : undefined;
+  const [cardBackgroundErrored, setCardBackgroundErrored] = useState(false);
+  useEffect(() => {
+    setCardBackgroundErrored(false);
+  }, [cardBackgroundUrl]);
+
   const img = getListImageUrl(product);
   const title = brandTitle(product);
   const sub = categorySubtitle(product);
@@ -101,6 +113,18 @@ function BrowseGiftCard({
         },
       ]}
     >
+      {cardBackgroundUrl && !cardBackgroundErrored ? (
+        <>
+          <Image
+            source={{ uri: cardBackgroundUrl }}
+            style={styles.cardBackgroundImage}
+            contentFit="cover"
+            transition={150}
+            onError={() => setCardBackgroundErrored(true)}
+          />
+          <View pointerEvents="none" style={styles.cardBackgroundOverlay} />
+        </>
+      ) : null}
       <View
         pointerEvents="none"
         style={{
@@ -165,8 +189,6 @@ export default function BrowseScreen() {
   const qParam = paramToString(params.q);
   const categoryIdParam = paramToOptionalInt(params.category_id);
   const brandIdParam = paramToOptionalInt(params.brand_id);
-
-  const appName = Constants.expoConfig?.name ?? 'AmazePays';
 
   const [search, setSearch] = useState(qParam);
   const [debouncedSearch, setDebouncedSearch] = useState(qParam.trim());
@@ -292,32 +314,12 @@ export default function BrowseScreen() {
       <View style={[styles.topHeaderWrap, { width: '100%', maxWidth: shellMaxWidth }]}>
         <View
           style={{
-            ...styles.headerTopRow,
             paddingTop: Platform.OS === 'android' ? spacing(0.5) : 0,
             paddingHorizontal: horizontalPad,
           }}
         >
-          <View style={styles.brandRow}>
-            <View style={styles.logoShell}>
-              <Image source={require('../../assets/logo.png')} style={styles.logoImage} contentFit="contain" />
-            </View>
-            <Text style={styles.appNameText} numberOfLines={1}>
-              {appName}
-            </Text>
-          </View>
-          <Pressable
-            accessibilityLabel="Notifications"
-            hitSlop={ms(12)}
-            onPress={() => {}}
-            style={({ pressed }) => [styles.notificationsButton, { opacity: pressed ? 0.65 : 1 }]}
-          >
-            <Ionicons name="notifications-outline" size={ms(24)} color={colors.primary} />
-          </Pressable>
+          <TopAppBar title="Browse Gift Cards" />
         </View>
-
-        <Text style={[styles.screenTitle, { paddingHorizontal: horizontalPad }]}>
-          Browse Gift Cards
-        </Text>
 
         <View style={[styles.stickyFilterWrap, { paddingHorizontal: horizontalPad }]}>
           <View
@@ -518,6 +520,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     padding: spacing(2),
   },
+  cardBackgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  cardBackgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.72)',
+  },
   cardImageRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -585,42 +594,6 @@ const styles = StyleSheet.create({
     fontSize: ms(12),
     fontWeight: '700',
     color: colors.danger,
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: spacing(1.5),
-  },
-  brandRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(1.25),
-  },
-  logoShell: {
-    width: ms(44),
-    height: ms(44),
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderRadius: ms(999),
-  },
-  logoImage: { width: ms(30), height: ms(30) },
-  appNameText: {
-    flex: 1,
-    fontSize: ms(18),
-    fontWeight: '800',
-    letterSpacing: ms(-0.2),
-    color: colors.primary,
-  },
-  notificationsButton: { padding: spacing(0.5) },
-  screenTitle: {
-    marginTop: spacing(0.5),
-    fontSize: ms(30),
-    fontWeight: '800',
-    letterSpacing: ms(-0.5),
-    color: colors.primary,
   },
   searchContainer: {
     marginTop: spacing(2),

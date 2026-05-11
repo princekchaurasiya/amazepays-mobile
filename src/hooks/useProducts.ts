@@ -11,8 +11,25 @@ const catalogKey = ['catalog'] as const;
 export function useProductList(filters: Omit<CatalogListParams, 'page'> = {}) {
   return useInfiniteQuery({
     queryKey: [...catalogKey, filters],
-    queryFn: ({ pageParam }) =>
-      productsApi.list({ ...filters, page: pageParam as number }),
+    queryFn: async ({ pageParam }) => {
+      const res = await productsApi.list({ ...filters, page: pageParam as number });
+      
+  console.group(`Page ${pageParam}`);
+  console.log('Meta:', res.meta);
+  console.log('Data:', res.data[0]);
+  console.log(
+    res.data.map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.selling_price,
+      image: p.resolved_image_url,
+    }))
+  );
+  
+  console.groupEnd();
+
+  return res;
+    },
     initialPageParam: 1,
     getNextPageParam: (last) => {
       const { meta } = last;

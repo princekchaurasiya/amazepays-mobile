@@ -98,3 +98,4 @@ export const OtpBox = forwardRef<TextInput, Props>(function OtpBox(
     </Animated.View>
   );
 });
+
